@@ -34,10 +34,12 @@ Base44 (`crearPedidoPOS`/`entry.ts`, `posApiClient.js`, `enviarPedidoAlPOS`, `ap
 | Categorías | tabla `categorias_producto` (RLS `activo=true`) | ✅ SELECT |
 | Crear pedido tentativo | tabla `pedidos` (RLS WITH CHECK `origen='web' AND estado='pendiente'`) | ✅ INSERT (sin SELECT) |
 
-## 6. GAPs detectados (resolver en WEB-1, NO en WEB-0)
-- **GAP 1 — folio del pedido web.** `pedidos.folio` es **NOT NULL** y anon **NO** puede ejecutar `siguiente_folio` (authenticated-only). La web (anon) puede INSERT pero no generar el folio. → Opciones: RPC `SECURITY DEFINER` anon-callable para folio de pedido web (patrón `login_pos`), o `folio` nullable que el POS asigna al tomar el pedido, o folio provisional en cliente. **Decisión de Miguel en WEB-1.**
-- **GAP 2 — upload de imagen de referencia (pastel).** La web (anon) sube la foto de referencia; el bucket `uploads` solo tiene INSERT para `authenticated` (anon solo READ). → Necesita política de Storage anon-INSERT acotada, o mecanismo alterno. **WEB-1.**
-- **Cambio de código (no es gap de DB) — `sucursales_disponibles` (nombres) → `sucursal_ids` (IDs):** `catalogo_publico` expone `sucursal_ids`; la lógica de disponibilidad de la web cambia de match por nombre a match por ID.
+## 6. GAPs — RESUELTOS en WEB-1 (migraciones en el repo POS, Supabase compartido)
+- **GAP 1 — folio del pedido web → RESUELTO (0017).** Trigger `BEFORE INSERT` en `pedidos` (`origen='web' AND folio IS NULL`) que asigna `siguiente_folio('pedido_pastel', sucursal_id)` vía función SECURITY DEFINER. `folio` sigue NOT NULL; anon sigue sin execute directo. **La web hace INSERT sin folio y la fila queda con `PP-<prefijo>-####`.** Verificado.
+- **GAP 2 — upload de imagen → RESUELTO (0018).** Bucket dedicado **`web-uploads`** (público/no-listable, 5MB, solo imágenes); anon INSERT solo ahí; lectura por URL. El `uploads` del POS sigue authenticated-only. Verificado.
+- **Cambio de código (WEB-2) — `sucursales_disponibles` (nombres) → `sucursal_ids` (IDs):** `catalogo_publico` expone `sucursal_ids`; la lógica de disponibilidad cambia de match por nombre a match por ID. (Se hace en el port.)
+
+> Las migraciones 0017/0018 viven en el repo POS (`supabase/migrations/`, fuente única de verdad del esquema), ya aplicadas a la Supabase compartida.
 
 ## 7. FLAG (anotado, no arreglado en WEB-0)
 Imágenes hardcodeadas en `media.base44.com` (logo + arte): `ConfettiHome.jsx`, `ConfettiNav.jsx`,
