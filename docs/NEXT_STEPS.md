@@ -14,11 +14,31 @@
 ## 🔴 PENDIENTE HUMANO DE MIGUEL
 - **Vercel:** crear proyecto APARTE ligado a `Pasteleria-Confetti-web-` (import one-click), rama `migracion/supabase`, + env vars `VITE_SUPABASE_URL` y `VITE_SUPABASE_ANON_KEY` (el MISMO Supabase del POS, `ivqcxdpqxwjxfohiswqb`).
 
-## 🔵 PRÓXIMO PASO: WEB-2 — port de la capa de datos (tras auditoría de Miguel)
-- Reemplazar `base44.entities.*`→`supabase.from(...)`: catálogo (`catalogo_publico`), config (`config_publica`), `sucursales`, `categorias_producto`.
-- Reemplazar `enviarPedidoAlPOS`→`supabase.from('pedidos').insert({origen:'web', estado:'pendiente', …})` (el folio lo pone el trigger 0017); upload de imagen → `web-uploads` (0018).
-- Eliminar puente/auth/plantilla (crearPedidoPOS, posApiClient, base44Client, AuthContext, Login/Register/ProtectedRoute, deps rojas).
-- `sucursales_disponibles` (nombres)→`sucursal_ids` (IDs). Re-hospedar imágenes `media.base44.com` en Storage.
-- Build verde + smoke (catálogo carga; enviar pedido web → aparece en el POS con folio).
+## 🔵 PRÓXIMO PASO: WEB-2 — PORT de la capa de datos (NO iniciado; arrancar aquí)
+> Trabajar en **clon fresco** de `M1gu3hb/Pasteleria-Confetti-web-` rama `migracion/supabase`; recrear `.env`
+> (`VITE_SUPABASE_URL` + `VITE_SUPABASE_ANON_KEY`, mismos del POS — copiar byte-exacto del `.env` del POS).
+> `npm install`. **NO tocar el repo/esquema POS** (0017/0018 ya cubren los GAPs). Es espejo de la Fase 2 del POS.
 
-> Reglas: NO tocar el repo/Supabase del POS (solo LEER esquema/vistas). NO re-exponer la api_key. Web pública = anon key + RLS. DETENERSE y reportar al cerrar cada fase.
+**1) Cliente Supabase anon + capa de adaptación (NO sed masivo):**
+- `src/api/supabaseClient.js`: `createClient(url, anonKey, { auth:{ persistSession:false } })`.
+- `src/api/entitiesAdapter.js`: `entities.{ProductoTerminado→catalogo_publico, ConfiguracionNegocio→config_publica, Sucursal→sucursales, CategoriaProducto→categorias_producto, PedidoPastel(create)→pedidos}` con `.filter(query,sort,limit)/.list()` (solo filtros eq) + `uploadArchivo(file)`→bucket `web-uploads` (devuelve `{file_url}`). En `catalogo_publico` ignorar filtros `visible_en_web`/`activo` (la vista ya los aplica).
+- En `pedidos.insert`: whitelist de columnas + **forzar `origen='web'`, `estado='pendiente'`, SIN `folio`** (el trigger 0017 lo asigna). **Quitar `devolver_base`** (no existe en la tabla compartida).
+
+**2) MATAR EL PUENTE / auth / plantilla — borrar:** carpeta `base44/`, `src/api/base44Client.js`, `src/lib/app-params.js`, `src/lib/AuthContext.jsx`, `src/utils/posApiClient.js`, `src/utils/pedidoPastelUtils.js` (legacy, NO portar), `src/components/{ProtectedRoute,UserNotRegisteredError,AuthLayout,GoogleIcon}.jsx`, `src/pages/{Login,Register,ForgotPassword,ResetPassword}.jsx`, `src/components/ui/{chart,input-otp}.jsx` (deps rojas). **Arreglar:** `src/App.jsx` (quitar AuthProvider/useAuth → solo `<Routes>`), `src/lib/PageNotFound.jsx` (quitar `base44.auth.me`). `package.json` (quitar `@base44/*` + Stripe/leaflet/three/jspdf/html2canvas/react-markdown/react-quill/moment/recharts/lodash/dnd/input-otp; +`@supabase/supabase-js`). `vite.config.js` (sin `@base44/vite-plugin`; alias `@`→`./src`).
+- Call-sites a portar (`base44.entities.*`→`entities.*`): `ConfettiCatalogo`, `ConfettiHome`, `ConfettiNav`, `ConfettiFooter` (config/sucursales), `ConfettiFormularioPastel` (Sucursal/Config + `UploadFile`→`uploadArchivo` + envío), `ConfettiFormularioProductos` (Producto/Sucursal/Categoria + envío + disponibilidad).
+
+**3) ⚠️ FIDELIDAD nombre→ID (cambio de LÓGICA, no plomería) — solo en `ConfettiFormularioProductos.jsx` + `SucursalSelector.jsx`:**
+- Hoy filtra/bloquea por `p.sucursales_disponibles` (**NOMBRES**) vía `nombresPermitidos` (intersección de nombres). `catalogo_publico` expone **`sucursal_ids` (IDs)**. Reescribir: `sucursalesValidasDe(p)` lee `p.sucursal_ids` (vacío/null = global); la intersección y `SucursalSelector` matchean por **`s.id`** (renombrar prop a `idsPermitidos`, `esPermitida = !ids || ids.includes(s.id)`). Para el mensaje de conflicto, mapear IDs→nombre (`sucursales.find(s=>s.id===…).nombre`).
+- **Verificar explícitamente:** un producto limitado a 1 sucursal (en staging existe `prueba suscursal` → solo Xochimilco `057f9ba7…`) aparece/bloquea correcto **por ID**.
+
+**4) UploadFile → `web-uploads`** (preserva contrato `{file_url}` que consume el form del pastel).
+
+**5) Imágenes `media.base44.com` — YA RE-HOSPEDADAS** (esta sesión) en `web-uploads/assets/` (8 archivos, MISMOS nombres). Base nueva: `https://ivqcxdpqxwjxfohiswqb.supabase.co/storage/v1/object/public/web-uploads/assets/`. **WEB-2 solo cambia el prefijo** en `confettiImages.jsx`, `ConfettiNav.jsx`, `ConfettiFooter.jsx`, `ConfettiHome.jsx` (sed del prefijo `https://media.base44.com/images/public/6a2afcaf5df5e3322f4da64e/` → la base nueva). NO re-subir.
+
+**6) ⚠️ DECISIÓN PENDIENTE DE MIGUEL — folio en pantalla Gracias:**
+- anon hace INSERT pero **no puede leer de vuelta el folio** (`pedidos` sin SELECT para anon; `insert().select()` → **42501**, probado). El pedido SÍ queda con `PP-<prefijo>-####` (trigger). Pero `ConfettiGracias` muestra `?folio=` y el envío ya no puede pasarlo.
+- Opciones: **(1, recomendada)** RPC `crear_pedido_web(payload jsonb) returns text` SECURITY DEFINER en una **migración 0019 del repo POS** que inserta + devuelve el folio (la web usa `supabase.rpc('crear_pedido_web', …)`); **(2)** Gracias sin folio (confirmación por WhatsApp); **(3)** policy anon SELECT (descartada — filtra pedidos ajenos). **Decidir con Miguel antes/durante WEB-2** (cambia el código del envío: `insert` vs `rpc`).
+
+**7) Build verde + deploy preview + SMOKE** (preview/local): catálogo desde `catalogo_publico` agrupado por `categoria_nombre`, branding Confetti (`config_publica`), imágenes re-hospedadas cargan; filtro por sucursal por ID (incl. producto de 1 sucursal); pastel: estima precio (precio_kilo_global/ratio), sube foto a `web-uploads`, ENVÍA → fila en `pedidos` `origen='web'/estado='pendiente'/folio PP-<prefijo>-#### (trigger)/tipo_pedido='pastel_personalizado'`; productos: texto en `notas_generales`, `kilos=0`; Gracias muestra el folio (según decisión #6). Verificar las filas/folios **por SQL/MCP** (anon no lee pedidos). Limpiar pedidos/archivos de prueba al terminar (staging solo maestros).
+
+> Reglas: NO tocar el repo/esquema POS (solo LEER vistas; el esquema vive en el repo POS). NO re-exponer la api_key `847df…`. Web pública = anon key + RLS. NO validar conexión end-to-end POS↔web todavía (eso es WEB-3). DETENERSE y reportar al cerrar WEB-2.
