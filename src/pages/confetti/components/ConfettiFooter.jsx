@@ -2,7 +2,7 @@ import React from "react";
 import { Link } from "react-router-dom";
 import { MapPin, Phone, WhatsappLogo } from "@phosphor-icons/react";
 import { useQuery } from "@tanstack/react-query";
-import { base44 } from "@/api/base44Client";
+import { entities } from "@/api/entitiesAdapter";
 
 function waLink(telefono) {
   const digits = (telefono || "").replace(/\D/g, "");
@@ -13,13 +13,13 @@ export default function ConfettiFooter() {
   const { data: sucursales = [] } = useQuery({
     queryKey: ["sucursalesActivas"],
     queryFn: () =>
-      base44.entities.Sucursal.filter({ activa: true }, "orden_visual"),
+      entities.Sucursal.filter({ activa: true }, "orden_visual"),
   });
 
   const { data: config } = useQuery({
     queryKey: ["configuracionNegocio"],
     queryFn: async () => {
-      const list = await base44.entities.ConfiguracionNegocio.list();
+      const list = await entities.ConfiguracionNegocio.list();
       return list[0] || null;
     },
   });
@@ -30,7 +30,7 @@ export default function ConfettiFooter() {
         {/* Marca */}
         <div>
           <img
-            src="https://media.base44.com/images/public/6a2afcaf5df5e3322f4da64e/2c2104ad3_1000135197.png"
+            src="https://ivqcxdpqxwjxfohiswqb.supabase.co/storage/v1/object/public/web-uploads/assets/2c2104ad3_1000135197.png"
             alt="Pastelería Confetti"
             className="h-24 w-24 object-contain rounded-full bg-white"
           />

@@ -14,8 +14,10 @@
 ## 🔴 PENDIENTE HUMANO DE MIGUEL
 - **Vercel:** crear proyecto APARTE ligado a `Pasteleria-Confetti-web-` (import one-click), rama `migracion/supabase`, + env vars `VITE_SUPABASE_URL` y `VITE_SUPABASE_ANON_KEY` (el MISMO Supabase del POS, `ivqcxdpqxwjxfohiswqb`).
 
-## 🔵 PRÓXIMO PASO: WEB-2 — PORT de la capa de datos (NO iniciado; arrancar aquí)
-> Trabajar en **clon fresco** de `M1gu3hb/Pasteleria-Confetti-web-` rama `migracion/supabase`; recrear `.env`
+## ✅ WEB-2 — PORT de la capa de datos: HECHO (pendiente de auditoría de Miguel)
+> **Build verde + smoke real en preview** (ambos formularios crean fila `web/pendiente` con folio del trigger; NOMBRE→ID verificado con `prueba suscursal`; imagen a `web-uploads/pedidos/`; transaccional=0 tras limpiar). Resumen en `docs/CHANGELOG.md` (2026-06-27 cont. 2). **Flags abiertos** (NO tocados): fotos de catálogo aún en `media.base44.com` (`productos.imagen_url`, dato POS); `creado_por_nombre` no se sella (whitelist 0019); 1 imagen de prueba (93 B) residual en `web-uploads/pedidos/` (borrar por Storage dashboard). **Siguiente = WEB-3** (validación end-to-end POS↔web), tras auditoría + import Vercel.
+>
+> _Plan ejecutado (referencia):_ se trabajó en `C:\Pasteleria Confetti\web` (clon en `migracion/supabase`, `.env` ya con las claves del POS).
 > (`VITE_SUPABASE_URL` + `VITE_SUPABASE_ANON_KEY`, mismos del POS — copiar byte-exacto del `.env` del POS).
 > `npm install`. **NO tocar el repo/esquema POS** (0017/0018 ya cubren los GAPs). Es espejo de la Fase 2 del POS.
 

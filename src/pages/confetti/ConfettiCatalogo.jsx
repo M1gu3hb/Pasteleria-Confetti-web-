@@ -2,7 +2,7 @@ import React, { useState, useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Cake, WhatsappLogo, ArrowRight } from "@phosphor-icons/react";
 import { useQuery } from "@tanstack/react-query";
-import { base44 } from "@/api/base44Client";
+import { entities } from "@/api/entitiesAdapter";
 import ConfettiReveal from "./components/ConfettiReveal";
 import ProductCard from "./components/ProductCard";
 
@@ -15,7 +15,7 @@ export default function ConfettiCatalogo() {
   const { data: productos = [], isLoading } = useQuery({
     queryKey: ["productosWeb"],
     queryFn: () =>
-      base44.entities.ProductoTerminado.filter(
+      entities.ProductoTerminado.filter(
         { visible_en_web: true, activo: true },
         "categoria_nombre",
         100

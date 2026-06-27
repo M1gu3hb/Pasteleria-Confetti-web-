@@ -7,10 +7,10 @@ export default function SucursalSelector({
   seleccionada,
   onSelect,
   error,
-  nombresPermitidos = null,
+  idsPermitidos = null,
 }) {
   const esPermitida = (s) =>
-    !nombresPermitidos || nombresPermitidos.includes(s.nombre);
+    !idsPermitidos || idsPermitidos.includes(s.id);
   return (
     <div className="space-y-3">
       {sucursales.map((sucursal) => {

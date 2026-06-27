@@ -2,7 +2,7 @@ import React from "react";
 import { Link, useLocation } from "react-router-dom";
 import { WhatsappLogo, Cake } from "@phosphor-icons/react";
 import { useQuery } from "@tanstack/react-query";
-import { base44 } from "@/api/base44Client";
+import { entities } from "@/api/entitiesAdapter";
 
 const WHATSAPP_PRINCIPAL = "https://wa.me/525593502639";
 
@@ -18,12 +18,12 @@ export default function ConfettiNav() {
   const { data: config } = useQuery({
     queryKey: ["configuracionNegocio"],
     queryFn: async () => {
-      const list = await base44.entities.ConfiguracionNegocio.list();
+      const list = await entities.ConfiguracionNegocio.list();
       return list[0] || null;
     },
   });
 
-  const logoUrl = "https://media.base44.com/images/public/6a2afcaf5df5e3322f4da64e/2c2104ad3_1000135197.png";
+  const logoUrl = "https://ivqcxdpqxwjxfohiswqb.supabase.co/storage/v1/object/public/web-uploads/assets/2c2104ad3_1000135197.png";
 
   return (
     <>

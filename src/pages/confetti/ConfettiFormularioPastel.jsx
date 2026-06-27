@@ -10,8 +10,7 @@ import {
 } from "@phosphor-icons/react";
 import { ChevronUp } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
-import { base44 } from "@/api/base44Client";
-import { enviarPedidoAlPOS } from "../../utils/posApiClient";
+import { entities, uploadArchivo } from "@/api/entitiesAdapter";
 import SucursalSelector from "./components/SucursalSelector";
 import PrecioResumen from "./components/PrecioResumen";
 import RellenoSelector from "./components/RellenoSelector";
@@ -78,13 +77,13 @@ export default function ConfettiFormularioPastel() {
   const { data: sucursales = [] } = useQuery({
     queryKey: ["sucursalesActivas"],
     queryFn: () =>
-      base44.entities.Sucursal.filter({ activa: true }, "orden_visual"),
+      entities.Sucursal.filter({ activa: true }, "orden_visual"),
   });
 
   const { data: configLocal } = useQuery({
     queryKey: ["confConfig"],
     queryFn: async () => {
-      const list = await base44.entities.ConfiguracionNegocio.list();
+      const list = await entities.ConfiguracionNegocio.list();
       return list[0] || null;
     },
   });
@@ -194,9 +193,7 @@ export default function ConfettiFormularioPastel() {
     try {
       let imagenUrl = null;
       if (imagenReferencia) {
-        const uploadResult = await base44.integrations.Core.UploadFile({
-          file: imagenReferencia,
-        });
+        const uploadResult = await uploadArchivo(imagenReferencia);
         imagenUrl = uploadResult?.file_url || null;
       }
 
@@ -236,7 +233,7 @@ export default function ConfettiFormularioPastel() {
         notas_generales: notasAdicionales || null,
       };
 
-      const resultado = await enviarPedidoAlPOS({
+      const resultado = await entities.PedidoPastel.create({
         ...pedidoData,
         devolver_base: true,
         creado_por_nombre: "Web Confetti",

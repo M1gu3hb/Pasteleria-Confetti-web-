@@ -13,7 +13,7 @@ import {
   Sparkle,
 } from "@phosphor-icons/react";
 import { useQuery } from "@tanstack/react-query";
-import { base44 } from "@/api/base44Client";
+import { entities } from "@/api/entitiesAdapter";
 import ConfettiParticles from "./components/ConfettiParticles";
 import ConfettiReveal from "./components/ConfettiReveal";
 import PasosEmojis from "./components/PasosEmojis";
@@ -74,13 +74,13 @@ export default function ConfettiHome() {
   const { data: sucursales = [] } = useQuery({
     queryKey: ["sucursalesActivas"],
     queryFn: () =>
-      base44.entities.Sucursal.filter({ activa: true }, "orden_visual"),
+      entities.Sucursal.filter({ activa: true }, "orden_visual"),
   });
 
   const { data: config } = useQuery({
     queryKey: ["confConfig"],
     queryFn: async () => {
-      const list = await base44.entities.ConfiguracionNegocio.list();
+      const list = await entities.ConfiguracionNegocio.list();
       return list[0] || null;
     },
   });
@@ -93,7 +93,7 @@ export default function ConfettiHome() {
 
         {/* Imagen de fondo */}
         <motion.img
-          src="https://media.base44.com/images/public/6a2afcaf5df5e3322f4da64e/928615b6c_generated_image.png"
+          src="https://ivqcxdpqxwjxfohiswqb.supabase.co/storage/v1/object/public/web-uploads/assets/928615b6c_generated_image.png"
           alt="Pastelería Confetti — pasteles artesanales"
           className="absolute inset-0 w-full h-full object-cover object-center"
           initial={{ scale: 1.06 }}
@@ -107,7 +107,7 @@ export default function ConfettiHome() {
         {/* Contenido */}
         <div className="relative z-20 text-center px-6 md:px-12 pt-16 md:pt-20 pb-16 max-w-4xl mx-auto">
           <motion.img
-            src="https://media.base44.com/images/public/6a2afcaf5df5e3322f4da64e/2c2104ad3_1000135197.png"
+            src="https://ivqcxdpqxwjxfohiswqb.supabase.co/storage/v1/object/public/web-uploads/assets/2c2104ad3_1000135197.png"
             alt="Pastelería Confetti"
             initial={{ opacity: 0, y: -16 }}
             animate={{ opacity: 1, y: 0 }}

@@ -3,8 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { WhatsappLogo, CaretDown } from "@phosphor-icons/react";
 import { useQuery } from "@tanstack/react-query";
-import { base44 } from "@/api/base44Client";
-import { enviarPedidoAlPOS } from "../../utils/posApiClient";
+import { entities } from "@/api/entitiesAdapter";
 import SucursalSelector from "./components/SucursalSelector";
 import ProductoSearch from "./components/ProductoSearch";
 import ProductosVerTodos from "./components/ProductosVerTodos";
@@ -43,7 +42,7 @@ export default function ConfettiFormularioProductos() {
   const { data: productos = [] } = useQuery({
     queryKey: ["productosWeb"],
     queryFn: () =>
-      base44.entities.ProductoTerminado.filter(
+      entities.ProductoTerminado.filter(
         { visible_en_web: true, activo: true },
         "categoria_nombre",
         100
@@ -53,12 +52,12 @@ export default function ConfettiFormularioProductos() {
   const { data: sucursales = [] } = useQuery({
     queryKey: ["sucursalesActivas"],
     queryFn: () =>
-      base44.entities.Sucursal.filter({ activa: true }, "orden_visual"),
+      entities.Sucursal.filter({ activa: true }, "orden_visual"),
   });
 
   const { data: categorias = [] } = useQuery({
     queryKey: ["categoriasProducto"],
-    queryFn: () => base44.entities.CategoriaProducto.list("orden"),
+    queryFn: () => entities.CategoriaProducto.list("orden"),
   });
 
   // Preseleccionar producto si viene del catálogo
@@ -86,49 +85,54 @@ export default function ConfettiFormularioProductos() {
   const seleccionados = productos.filter((p) => (cantidades[p.id] || 0) > 0);
   const totalProductos = seleccionados.reduce((s, p) => s + cantidades[p.id], 0);
 
-  // Sucursales válidas de un producto (vacío = todas / global)
+  // Sucursales válidas (IDs) de un producto (vacío/null = todas / global).
+  // El esquema compartido expone `sucursal_ids` (uuid[]) en catalogo_publico;
+  // la disponibilidad se matchea por ID, NO por nombre.
   const sucursalesValidasDe = (p) =>
-    Array.isArray(p.sucursales_disponibles) && p.sucursales_disponibles.length > 0
-      ? p.sucursales_disponibles
+    Array.isArray(p.sucursal_ids) && p.sucursal_ids.length > 0
+      ? p.sucursal_ids
       : null; // null = global
 
-  // Nombres permitidos = intersección de los productos seleccionados.
+  // IDs permitidos = intersección de los productos seleccionados.
   // null = sin restricción (todos globales).
-  const nombresPermitidos = useMemo(() => {
-    const todos = sucursales.map((s) => s.nombre);
+  const idsPermitidos = useMemo(() => {
+    const todos = sucursales.map((s) => s.id);
     let permitidos = null;
     seleccionados.forEach((p) => {
       const validas = sucursalesValidasDe(p);
       if (!validas) return; // global no restringe
       permitidos =
         permitidos === null
-          ? validas.filter((n) => todos.includes(n))
-          : permitidos.filter((n) => validas.includes(n));
+          ? validas.filter((id) => todos.includes(id))
+          : permitidos.filter((id) => validas.includes(id));
     });
-    return permitidos; // null o array de nombres
+    return permitidos; // null o array de IDs
   }, [seleccionados, sucursales]);
 
-  const hayConflicto = nombresPermitidos !== null && nombresPermitidos.length === 0;
+  const hayConflicto = idsPermitidos !== null && idsPermitidos.length === 0;
 
   // Productos exclusivos (no globales) para el mensaje de conflicto
   const productosExclusivos = seleccionados.filter((p) => sucursalesValidasDe(p));
+
+  // ID -> nombre de sucursal (solo para mostrar en los mensajes).
+  const nombreDeSucursal = (id) => sucursales.find((s) => s.id === id)?.nombre || id;
 
   // Auto-seleccionar cuando queda exactamente una sucursal permitida.
   // Limpiar selección si la seleccionada ya no es permitida.
   useEffect(() => {
     if (hayConflicto) return;
-    if (nombresPermitidos && nombresPermitidos.length === 1) {
-      const unica = sucursales.find((s) => s.nombre === nombresPermitidos[0]);
+    if (idsPermitidos && idsPermitidos.length === 1) {
+      const unica = sucursales.find((s) => s.id === idsPermitidos[0]);
       if (unica && unica.id !== sucursalSeleccionada?.id) setSucursalSeleccionada(unica);
     } else if (
-      nombresPermitidos &&
+      idsPermitidos &&
       sucursalSeleccionada &&
-      !nombresPermitidos.includes(sucursalSeleccionada.nombre)
+      !idsPermitidos.includes(sucursalSeleccionada.id)
     ) {
       setSucursalSeleccionada(null);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [nombresPermitidos, hayConflicto, sucursales]);
+  }, [idsPermitidos, hayConflicto, sucursales]);
   const totalAprox = seleccionados.reduce(
     (s, p) => s + cantidades[p.id] * (p.precio_venta || 0),
     0
@@ -171,7 +175,7 @@ export default function ConfettiFormularioProductos() {
     setSinSucursalError(false);
 
     try {
-      const resultado = await enviarPedidoAlPOS({
+      const resultado = await entities.PedidoPastel.create({
         sucursal_id: sucursalSeleccionada.id,
         sucursal_nombre: sucursalSeleccionada.nombre,
         origen: "web",
@@ -369,17 +373,17 @@ export default function ConfettiFormularioProductos() {
               <ul className="space-y-0.5">
                 {productosExclusivos.map((p) => (
                   <li key={p.id}>
-                    • <strong>{p.nombre}</strong> → {(p.sucursales_disponibles || []).join(", ")}
+                    • <strong>{p.nombre}</strong> → {(p.sucursal_ids || []).map(nombreDeSucursal).join(", ")}
                   </li>
                 ))}
               </ul>
             </div>
           ) : (
-            nombresPermitidos &&
-            nombresPermitidos.length === 1 && (
+            idsPermitidos &&
+            idsPermitidos.length === 1 && (
               <div className="mb-4 bg-[#FDEEF6] text-[#5C2D1E] text-sm font-['Plus_Jakarta_Sans'] p-4 rounded-2xl">
                 🛈 {productosExclusivos.map((p) => `"${p.nombre}"`).join(", ")} solo está
-                disponible en <strong>{nombresPermitidos[0]}</strong>. Tu pedido se recogerá
+                disponible en <strong>{nombreDeSucursal(idsPermitidos[0])}</strong>. Tu pedido se recogerá
                 en esa sucursal.
               </div>
             )
@@ -388,7 +392,7 @@ export default function ConfettiFormularioProductos() {
           <SucursalSelector
             sucursales={sucursales}
             seleccionada={sucursalSeleccionada}
-            nombresPermitidos={hayConflicto ? [] : nombresPermitidos}
+            idsPermitidos={hayConflicto ? [] : idsPermitidos}
             onSelect={(s) => {
               setSucursalSeleccionada(s);
               setSinSucursalError(false);
