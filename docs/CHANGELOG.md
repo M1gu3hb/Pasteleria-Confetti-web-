@@ -2,6 +2,18 @@
 
 Orden cronológico inverso. Conventional-ish. El esquema vive en el repo POS (fuente única).
 
+## 2026-06-27 (cont. 3) — WEB-3: validación END-TO-END POS↔web (flujo cruzado) — APROBADA por evidencia
+**El puente Base44 colapsó: un pedido nace en la web y aparece en el POS; un producto editado en el POS se ve en el catálogo — todo por la DB compartida (sin sync, sin crearPedidoPOS, sin api_key).** Ambos previews contra el MISMO Supabase. (Nota de entorno: el harness corre un solo preview a la vez; se creó el pedido web → persistió en la DB → se levantó el POS → lo leyó. Eso además demuestra "el POS opera aunque la web caiga".)
+
+- **FLUJO 1 — pedido WEB → POS:** desde la web (anon) se crearon 2 pedidos a **Topilejo** vía la RPC: pastel `PP-B-0001` (con imagen a `web-uploads/pedidos/`) y catálogo `PP-B-0002`.
+  - El POS, como **terminal Topilejo** (sesión scoped), los ve: el **pastel en PedidosPastel** con badge **🌐 WEB**; detalle 100% fiel — "🌐 Pedido recibido desde la página web", cliente/tel/fecha/kilos(3)/personas(21)/concepto/relleno/decorado/leyenda, VENTA Pastel $420 + Velas $40 = **$460**, sección **IMAGEN DE REFERENCIA** (renderiza la imagen de `web-uploads`), y **"Creado por Web Confetti"** (la señal que Abel usa, visible).
+  - El **catálogo** entra a la **cola web de Caja** (badge "Pedidos 1" con caja abierta) y la terminal lo lee con **kilos=0** y los productos como **texto en `notas_generales`** ("PRODUCTOS SOLICITADOS: 2x Rebanada…").
+  - **AISLAMIENTO por sucursal:** como **terminal Xochimilco**, la consulta a `pedidos` (origen='web') devuelve **0** — no ve los pedidos de Topilejo (RLS `pos_scope_pedidos`). "A no ve B" aplica también a los pedidos web.
+  - Paso 6 (abono) no ejecutado (opcional); el detalle del pedido web expone las MISMAS acciones `Confirmar/Pago/Entregado` que un pedido interno → el flujo financiero lo trata igual.
+- **FLUJO 2 — producto POS → catálogo WEB (misma fila, sin sync):** se editó `Cheesecake` en el POS (nombre→"Cheesecake WEB3 EDIT", precio 300→**333**); el **catálogo web mostró el cambio de inmediato** (misma fila vía `catalogo_publico`, NO una copia). `visible_en_web=false` → **desaparece** de la vista; `true` → **reaparece**. La vista expone solo columnas seguras (`id, nombre, descripcion_web, precio_venta, categoria_nombre, imagen_url, sucursal_ids, orden`) — **sin costo/margen**, y anon no tiene acceso a la tabla `productos`. **Restaurado** a `Cheesecake / $300 / visible` (confirmado en el catálogo web).
+- **Limpieza:** transaccional=0, folio_contador=0; **maestros intactos** (productos 20, sucursales 3, Cheesecake con valores originales). Residual: 2 imágenes de prueba (93 B + 110 B) en `web-uploads/pedidos/` (borrar por Storage dashboard; el trigger de Supabase bloquea el delete por SQL, sin service_role).
+- **Diffs vs Base44:** ninguno en el flujo cruzado. El comportamiento operativo es idéntico (pedidos aparecen, productos se reflejan), ahora sin api_key/sync/crearPedidoPOS y mejor desacoplado.
+
 ## 2026-06-27 (cont. 2) — WEB-2: PORT de la capa de datos HECHO (build verde + smoke real)
 **Independización de Base44 completa en código.** El puente murió; la web habla con el Supabase compartido vía anon key + RLS, y crea pedidos por la RPC `crear_pedido_web`.
 
