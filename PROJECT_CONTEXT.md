@@ -1,7 +1,7 @@
 # PROJECT_CONTEXT — Web Confetti (catálogo público; migración Base44 → Vercel + Supabase compartido)
 
 > **Fuente principal de transferencia.** Léelo COMPLETO antes de tocar nada, junto con `CLAUDE.md` y `docs/`.
-> Última actualización: 2026-06-27 (WEB-0 y WEB-1 HECHAS; próximo = WEB-2 port, NO iniciado).
+> Última actualización: 2026-06-27 (WEB-0 y WEB-1 HECHAS; WEB-2 EN CURSO — sub-paso 1 = RPC `crear_pedido_web` / migración 0019 en repo POS, aplicada y verificada; sigue el port de la capa de datos).
 > **Working tree:** `C:\Pasteleria Confetti\web`. Repo: `M1gu3hb/Pasteleria-Confetti-web-` (privado, **CON guion final**). `main`=baseline export (api_key REDACTADA); rama de trabajo `migracion/supabase`.
 
 ## 1. Objetivo
@@ -32,13 +32,13 @@ Base44 (`crearPedidoPOS`/`entry.ts`, `posApiClient.js`, `enviarPedidoAlPOS`, `ap
 | Config de marca + precio pastel | vista `config_publica` (nombre_negocio, logo_url, color_primario, color_acento, precio_kilo_global, ratio_personas_por_kilo) | ✅ SELECT |
 | Sucursales activas | tabla `sucursales` (RLS `activa=true`) | ✅ SELECT |
 | Categorías | tabla `categorias_producto` (RLS `activo=true`) | ✅ SELECT |
-| Crear pedido tentativo | tabla `pedidos` (RLS WITH CHECK `origen='web' AND estado='pendiente'`) | ✅ INSERT (sin SELECT) |
+| Crear pedido tentativo | tabla `pedidos` vía **RPC `crear_pedido_web`** (0019; enforce `origen='web' AND estado='pendiente'`, devuelve el folio) | ✅ EXECUTE (sin SELECT) |
 
 ## 6. GAPs — RESUELTOS en WEB-1 (migraciones en el repo POS, Supabase compartido)
 - **GAP 1 — folio del pedido web → RESUELTO (0017).** Trigger `BEFORE INSERT` en `pedidos` (`origen='web' AND folio IS NULL`) que asigna `siguiente_folio('pedido_pastel', sucursal_id)` vía función SECURITY DEFINER. `folio` sigue NOT NULL; anon sigue sin execute directo. **La web hace INSERT sin folio y la fila queda con `PP-<prefijo>-####`.** Verificado.
 - **GAP 2 — upload de imagen → RESUELTO (0018).** Bucket dedicado **`web-uploads`** (público/no-listable, 5MB, solo imágenes); anon INSERT solo ahí; lectura por URL. El `uploads` del POS sigue authenticated-only. Verificado.
 - **Cambio de código (WEB-2) — `sucursales_disponibles` (nombres) → `sucursal_ids` (IDs):** `catalogo_publico` expone `sucursal_ids`; la lógica de disponibilidad cambia de match por nombre a match por ID. **Cambio de LÓGICA, no plomería** — un find-replace lo rompe en silencio. (Se hace en el port; verificar con producto de 1 sucursal.)
-- **⚠️ Folio en pantalla Gracias (gap nuevo, DECISIÓN PENDIENTE DE MIGUEL):** anon hace INSERT pero **NO puede leer de vuelta el folio** (`pedidos` sin SELECT para anon; `insert().select()` → 42501, probado). La fila SÍ queda con `PP-<prefijo>-####` (trigger). Para mostrarlo en Gracias: (1, recomendada) RPC `crear_pedido_web(...)` SECURITY DEFINER (migración 0019, repo POS) que devuelva el folio; (2) Gracias sin folio (confirmación por WhatsApp); (3) policy anon SELECT (descartada). Decidir con Miguel.
+- **✅ Folio en pantalla Gracias — RESUELTO (RPC, migración 0019 repo POS, aplicada y verificada):** anon hace INSERT pero **NO puede leer de vuelta el folio** (`pedidos` sin SELECT para anon; `insert().select()` → 42501). **Decisión de Miguel (bloqueada): opción 1** — RPC `crear_pedido_web(payload jsonb) → text` SECURITY DEFINER que inserta y **devuelve el folio**. En el port, el envío usa `supabase.rpc('crear_pedido_web', { payload })` (no `insert`) y pasa el folio devuelto a `ConfettiGracias`. anon nunca lee `pedidos` directo. Descartadas: Gracias sin folio; policy anon SELECT.
 
 > Las migraciones 0017/0018 viven en el repo POS (`supabase/migrations/`, fuente única de verdad del esquema), ya aplicadas a la Supabase compartida.
 
@@ -49,11 +49,11 @@ Las 8 imágenes (logo + arte de `ConfettiHome.jsx`, `ConfettiNav.jsx`, `Confetti
 **WEB-2 solo cambia el prefijo de URL** (de `https://media.base44.com/images/public/6a2afcaf5df5e3322f4da64e/` a la base nueva). NO re-subir.
 
 ## 8. Repo / plataformas
-- GitHub: `M1gu3hb/Pasteleria-Confetti-Web` (**privado**, separado del POS). `main` = baseline export (api_key REDACTADA). Rama de trabajo `migracion/supabase`.
+- GitHub: `M1gu3hb/Pasteleria-Confetti-web-` (**privado**, separado del POS; **CON guion final**). `main` = baseline export (api_key REDACTADA). Rama de trabajo `migracion/supabase`.
 - Supabase: **el MISMO del POS** (`ivqcxdpqxwjxfohiswqb`) — NO crear otro proyecto.
 - Vercel: proyecto **aparte** ligado a este repo (import one-click de Miguel).
 
 ## 9. Estado y próximo paso — ver `docs/NEXT_STEPS.md`
 - **WEB-0** (recon + andamiaje): HECHA. Repo web pusheado.
 - **WEB-1** (GAP1 trigger 0017 + GAP2 bucket 0018, en repo POS): HECHA y verificada (anon 11/11, folio `PP-A-0001`, regresión POS limpia).
-- **WEB-2** (port de la capa de datos Base44→Supabase): **NO iniciado = PRÓXIMO PASO.** Plan paso a paso en `docs/NEXT_STEPS.md` (cliente anon + adaptador; matar puente/auth; INSERT directo en `pedidos`; NOMBRE→ID; UploadFile→`web-uploads`; build verde + smoke). NO validar end-to-end POS↔web todavía (eso es WEB-3).
+- **WEB-2** (port de la capa de datos Base44→Supabase): **EN CURSO.** Sub-paso 1 HECHO: **RPC `crear_pedido_web` (migración 0019, repo POS)** aplicada y verificada (el envío del pedido pasa de `insert` a `rpc`, devuelve el folio para Gracias). Pendiente de auditoría de Miguel antes de seguir. Resto del plan en `docs/NEXT_STEPS.md` (cliente anon + adaptador; matar puente/auth; envío vía `rpc('crear_pedido_web')`; NOMBRE→ID; UploadFile→`web-uploads`; build verde + smoke). NO validar end-to-end POS↔web todavía (eso es WEB-3).
