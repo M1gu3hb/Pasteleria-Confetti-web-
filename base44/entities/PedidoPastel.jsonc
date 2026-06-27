@@ -1,0 +1,144 @@
+{
+  "name": "PedidoPastel",
+  "type": "object",
+  "properties": {
+    "folio_pedido": {
+      "type": "string"
+    },
+    "sucursal_id": {
+      "type": "string"
+    },
+    "sucursal_nombre": {
+      "type": "string"
+    },
+    "origen": {
+      "type": "string",
+      "enum": [
+        "web",
+        "pos_interno"
+      ],
+      "default": "web"
+    },
+    "estado": {
+      "type": "string",
+      "enum": [
+        "pendiente",
+        "confirmado",
+        "cancelado"
+      ],
+      "default": "pendiente"
+    },
+    "tipo_pedido": {
+      "type": "string",
+      "enum": [
+        "pastel_personalizado",
+        "productos_catalogo"
+      ]
+    },
+    "cliente_nombre": {
+      "type": "string"
+    },
+    "cliente_telefono": {
+      "type": "string"
+    },
+    "cliente_email": {
+      "type": "string"
+    },
+    "cliente_direccion": {
+      "type": "string"
+    },
+    "requiere_entrega": {
+      "type": "boolean",
+      "default": false
+    },
+    "fecha_entrega": {
+      "type": "string",
+      "format": "date"
+    },
+    "hora_entrega": {
+      "type": "string"
+    },
+    "kilos": {
+      "type": "number"
+    },
+    "personas_estimadas": {
+      "type": "number"
+    },
+    "concepto": {
+      "type": "string"
+    },
+    "decorado": {
+      "type": "string"
+    },
+    "rellenos": {
+      "type": "string"
+    },
+    "leyenda_pastel": {
+      "type": "string"
+    },
+    "incluye_base": {
+      "type": "boolean",
+      "default": false
+    },
+    "precio_base": {
+      "type": "number",
+      "default": 0
+    },
+    "incluye_oblea": {
+      "type": "boolean",
+      "default": false
+    },
+    "precio_oblea": {
+      "type": "number",
+      "default": 0
+    },
+    "incluye_muneca": {
+      "type": "boolean",
+      "default": false
+    },
+    "precio_muneca": {
+      "type": "number",
+      "default": 0
+    },
+    "incluye_velas": {
+      "type": "boolean",
+      "default": false
+    },
+    "precio_velas": {
+      "type": "number",
+      "default": 0
+    },
+    "precio_kilo_usado": {
+      "type": "number",
+      "default": 0
+    },
+    "subtotal_pastel": {
+      "type": "number",
+      "default": 0
+    },
+    "subtotal_extras": {
+      "type": "number",
+      "default": 0
+    },
+    "total_calculado": {
+      "type": "number",
+      "default": 0
+    },
+    "total_final": {
+      "type": "number",
+      "default": 0
+    },
+    "imagen_referencia_url": {
+      "type": "string"
+    },
+    "notas_generales": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "cliente_nombre",
+    "cliente_telefono",
+    "fecha_entrega",
+    "sucursal_id"
+  ]
+}

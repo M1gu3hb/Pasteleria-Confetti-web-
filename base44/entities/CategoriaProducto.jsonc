@@ -1,0 +1,21 @@
+{
+  "name": "CategoriaProducto",
+  "type": "object",
+  "properties": {
+    "nombre": {
+      "type": "string"
+    },
+    "color": {
+      "type": "string"
+    },
+    "icono": {
+      "type": "string"
+    },
+    "orden": {
+      "type": "number"
+    }
+  },
+  "required": [
+    "nombre"
+  ]
+}

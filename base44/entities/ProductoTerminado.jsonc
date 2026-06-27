@@ -1,0 +1,51 @@
+{
+  "name": "ProductoTerminado",
+  "type": "object",
+  "properties": {
+    "nombre": {
+      "type": "string"
+    },
+    "producto_pos_id": {
+      "type": "string",
+      "description": "ID estable del producto en el POS que origina esta copia web. El sync POS\u2192web empareja por este campo (NO por nombre): al crear se guarda el id del POS; al actualizar se busca la copia web por producto_pos_id. As\u00ed renombrar/editar en el POS siempre actualiza la copia correcta sin duplicar."
+    },
+    "categoria_nombre": {
+      "type": "string"
+    },
+    "precio_venta": {
+      "type": "number"
+    },
+    "descripcion_web": {
+      "type": "string"
+    },
+    "imagen_url": {
+      "type": "string"
+    },
+    "activo": {
+      "type": "boolean",
+      "default": true
+    },
+    "visible_en_web": {
+      "type": "boolean",
+      "default": true
+    },
+    "visible_en_pos": {
+      "type": "boolean",
+      "default": true
+    },
+    "orden": {
+      "type": "number"
+    },
+    "sucursales_disponibles": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "default": [],
+      "description": "Nombres de sucursales donde el producto est\u00e1 disponible. Vac\u00edo o ausente = disponible en TODAS las sucursales (global). La web filtra el cat\u00e1logo y bloquea la selecci\u00f3n de sucursal en el pedido usando este campo, matcheando contra el nombre exacto de la Sucursal."
+    }
+  },
+  "required": [
+    "nombre"
+  ]
+}
