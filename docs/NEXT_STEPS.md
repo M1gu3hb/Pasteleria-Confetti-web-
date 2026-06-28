@@ -1,6 +1,19 @@
 # NEXT_STEPS — Web Confetti
 
-Última actualización: 2026-06-26 (WEB-0 hecho).
+Última actualización: 2026-06-27 (Web migrada y VALIDADA — WEB-0..3 + flujo cruzado; **bot 60 días confirmó web 30/30 pedidos a sucursal correcta**; próxima fase = **Vercel + MEJORAS**; cutover pendiente = lunes).
+
+## 🟢 ESTADO ACTUAL (lee esto primero)
+- **Web pública migrada, independiente y VALIDADA como en Base44** (WEB-0/1/2/3 hechas; flujo cruzado POS↔web aprobado por evidencia).
+- **Bot de pruebas largas (60 días, repo del POS) confirmó la web a volumen:** **30/30 pedidos web** (pastel + catálogo) llegaron a la **sucursal correcta**, con aislamiento RLS intacto. La cadena NOMBRE→ID y `config_publica`/`catalogo_publico` se comportan fielmente.
+- **CUTOVER NO hecho** — Abel se instala el **LUNES**; hasta entonces, Base44. **Imágenes de catálogo (`media.base44.com`): NO tocar** (se mantienen para la demo; al independizar, recrear/descargar idénticas, nunca quitarlas).
+
+## ▶️ PRÓXIMA FASE = MEJORAS (orden completo en el repo POS: `docs/MEJORAS_POST_VALIDACION.md`)
+- **#1 Vercel Web:** ❌ **FALTA** — este repo (`Pasteleria-Confetti-web-`) **no tiene proyecto Vercel** todavía. Crear un **proyecto APARTE** (one-click import), rama `migracion/supabase`, + env vars `VITE_SUPABASE_URL` y `VITE_SUPABASE_ANON_KEY` (el MISMO Supabase del POS, `ivqcxdpqxwjxfohiswqb`). (El POS ya está en Vercel como `pasteleria-confetti` en preview.)
+- **Mejoras que tocan la web** (detalle en el doc del POS): **pagos mixtos** también en el anticipo/cobro de pedido web (#5) + resolver que el pedido web de catálogo nace con `saldo_pendiente=0`; **cancelación de pedido web** con anticipo → devolución negativa en corte (#6).
+- **Verificaciones pendientes** (no probadas a fondo): adelantar pago de pedido web de **catálogo** con método → que sume en corte + dashboard; cambiar **imagen y descripción** de producto → reflejo en el catálogo web.
+
+---
+
 
 ## ✅ WEB-0 — HECHO (pendiente de revisión de Miguel)
 - Leídas las fuentes (ZIP web, auditoría, MDs 04/05/06) y verificadas contra el código real.
