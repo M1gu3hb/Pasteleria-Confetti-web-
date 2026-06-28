@@ -1,7 +1,7 @@
 # PROJECT_CONTEXT — Web Confetti (catálogo público; migración Base44 → Vercel + Supabase compartido)
 
 > **Fuente principal de transferencia.** Léelo COMPLETO antes de tocar nada, junto con `CLAUDE.md` y `docs/`.
-> Última actualización: 2026-06-27 (WEB-0 y WEB-1 HECHAS; WEB-2 EN CURSO — sub-paso 1 = RPC `crear_pedido_web` / migración 0019 en repo POS, aplicada y verificada; sigue el port de la capa de datos).
+> Última actualización: 2026-06-27 (**Web migrada y VALIDADA — WEB-0..3 + flujo cruzado HECHOS**; el **bot de 60 días confirmó 30/30 pedidos web a sucursal correcta**; **próxima fase = Vercel + MEJORAS** → ver `docs/MEJORAS_POST_VALIDACION.md` del repo POS; **falta crear el proyecto Vercel de esta web**; cutover pendiente = lunes, imágenes se mantienen).
 > **Working tree:** `C:\Pasteleria Confetti\web`. Repo: `M1gu3hb/Pasteleria-Confetti-web-` (privado, **CON guion final**). `main`=baseline export (api_key REDACTADA); rama de trabajo `migracion/supabase`.
 
 ## 1. Objetivo
