@@ -2,6 +2,12 @@
 
 Orden cronológico inverso. Conventional-ish. El esquema vive en el repo POS (fuente única).
 
+## 2026-06-27 (cont. 4) — Bot 60 días validó la web a volumen + apertura de fase MEJORAS
+- **El bot de pruebas largas (60 días, repo del POS) ejercitó la web a volumen:** **30/30 pedidos web** (pastel + catálogo, días pares, semilla fija) enviados desde el formulario real y **recibidos en la sucursal correcta** del POS, con aislamiento RLS intacto en toda la corrida. La web queda respaldada como fiel a Base44.
+- **Próxima fase = MEJORAS** (lista ordenada en el repo POS `docs/MEJORAS_POST_VALIDACION.md`). **#1 = Vercel:** esta web (`Pasteleria-Confetti-web-`) **aún NO tiene proyecto Vercel** → crear uno **APARTE** + env vars Supabase. (El POS ya está en Vercel como `pasteleria-confetti` en preview de `migracion/supabase`.)
+- **Mejoras que tocan la web:** pagos **mixtos** en el anticipo/cobro de pedido web + resolver `saldo_pendiente=0` del pedido de catálogo (#5); **cancelación de pedido web** con anticipo → devolución negativa en el corte (#6). **Verificar:** adelantar pago de pedido web de catálogo (que sume en corte+dashboard) y reflejo de **imagen/descripción** de producto en el catálogo.
+- **Cutover de Base44 PENDIENTE** (Abel se instala el lunes). **Imágenes `media.base44.com`: se mantienen** (al independizar, recrear/descargar idénticas; nunca quitarlas). `NEXT_STEPS.md` y `PROJECT_CONTEXT.md` actualizados.
+
 ## 2026-06-27 (cont. 3) — WEB-3: validación END-TO-END POS↔web (flujo cruzado) — APROBADA por evidencia
 **El puente Base44 colapsó: un pedido nace en la web y aparece en el POS; un producto editado en el POS se ve en el catálogo — todo por la DB compartida (sin sync, sin crearPedidoPOS, sin api_key).** Ambos previews contra el MISMO Supabase. (Nota de entorno: el harness corre un solo preview a la vez; se creó el pedido web → persistió en la DB → se levantó el POS → lo leyó. Eso además demuestra "el POS opera aunque la web caiga".)
 
