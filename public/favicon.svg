@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <rect width="64" height="64" rx="14" fill="#E8579A"/>
+  <!-- velita -->
+  <rect x="30.5" y="12" width="3" height="9" rx="1.5" fill="#FFFFFF"/>
+  <circle cx="32" cy="10" r="2.6" fill="#FBBF24"/>
+  <!-- betún -->
+  <path d="M16 30c0-5 4.6-8 8-8 1.8-3.4 14.2-3.4 16 0 3.4 0 8 3 8 8 0 3-2.4 5-5 5H21c-2.6 0-5-2-5-5z" fill="#FFFFFF"/>
+  <!-- pan del pastel -->
+  <path d="M18 35h28v11c0 2.2-1.8 4-4 4H22c-2.2 0-4-1.8-4-4V35z" fill="#FCE7F1"/>
+  <!-- confeti -->
+  <circle cx="25" cy="41" r="1.7" fill="#8B5CF6"/>
+  <circle cx="32" cy="44" r="1.7" fill="#F59E0B"/>
+  <circle cx="39" cy="41" r="1.7" fill="#34D399"/>
+</svg>

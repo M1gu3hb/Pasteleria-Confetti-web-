@@ -43,9 +43,10 @@ export default function ConfettiFormularioPastel() {
   const [fechaEntrega, setFechaEntrega] = useState("");
   const [horaEntrega, setHoraEntrega] = useState("");
 
-  // Tamaño
-  const [personas, setPersonas] = useState(20);
-  const [kilos, setKilos] = useState(2);
+  // Tamaño — arrancan vacíos: el cliente pone PRIMERO las personas y de ahí se
+  // sugieren los kilos (kilos en 0 por defecto, no 3).
+  const [personas, setPersonas] = useState("");
+  const [kilos, setKilos] = useState("");
   const [kilosEditadoManual, setKilosEditadoManual] = useState(false);
   const [precioKilo, setPrecioKilo] = useState(0);
   const [ratio, setRatio] = useState(10);
@@ -94,11 +95,19 @@ export default function ConfettiFormularioPastel() {
     }
   }, [configLocal]);
 
-  // Calcular kilos sugeridos al cambiar personas
-  const kilosSugeridos = Math.max(1, Math.ceil((personas || 0) / (ratio || 10)));
+  // Calcular kilos sugeridos al cambiar personas. Solo autocompleta si el cliente
+  // ya escribió las personas (kilos arranca en 0 — primero las personas).
+  const kilosSugeridos = Math.max(1, Math.ceil((Number(personas) || 0) / (ratio || 10)));
   useEffect(() => {
-    if (!kilosEditadoManual) setKilos(kilosSugeridos);
-  }, [kilosSugeridos, kilosEditadoManual]);
+    if (!kilosEditadoManual && Number(personas) > 0) setKilos(kilosSugeridos);
+  }, [kilosSugeridos, kilosEditadoManual, personas]);
+
+  // Pastel grande (más de 3 kg) → se incluye el "Pastel de base" automáticamente.
+  useEffect(() => {
+    if (Number(kilos) > 3) {
+      setExtrasSeleccionados((prev) => (prev.base ? prev : { ...prev, base: true }));
+    }
+  }, [kilos]);
 
   // Fecha mínima: mañana
   const manana = new Date();
