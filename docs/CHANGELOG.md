@@ -2,6 +2,18 @@
 
 Orden cronológico inverso. Conventional-ish. El esquema vive en el repo POS (fuente única).
 
+## 2026-06-29 (cont.) — Relleno = extra PLANO que se SUMA (no reemplaza) + layout del selector
+> Detalle en `AUDITORIA_FINAL/REPORTES/BITACORA.md` (Fase 4).
+- `ConfettiFormularioPastel.jsx`: el relleno ya no reemplaza el precio/kilo; base se mantiene y el
+  relleno (si > 0) se **suma** como extra plano (`subtotalExtras += rellenoPrecio`). `precioKiloEfectivo`
+  → `precioKilo`. `precio_kilo_usado` = base.
+- `components/PrecioResumen.jsx`: línea "Relleno · <nombre> +$X"; la línea "Extras" excluye el
+  relleno para no duplicar en pantalla.
+- `components/RellenoSelector.jsx`: **layout aireado** — grid 1/2-col de opciones full-width (52px,
+  tap-friendly), badge "+$X". Antes chips amontonados.
+- Consistente con el POS. **Verificado EN VIVO:** 2kg×$140 = $280 → relleno $40 → **$320**; $0 no
+  suma. Commit `d25038b` → Vercel READY.
+
 ## 2026-06-29 — Auditoría final pre-instalación (Web) + deploy
 > Detalle y bitácora en `AUDITORIA_FINAL/` (workspace).
 - **`index.html`:** título `Base44 APP` → **Pastelería Confetti**; favicon Base44 → `/favicon.svg`.
