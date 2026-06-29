@@ -149,15 +149,16 @@ export default function ConfettiFormularioPastel() {
     }
   }, [configLocal?.rellenos_pastel]);
 
-  // Precios — si el relleno define precio, ese manda; si no, usa el global
-  const precioKiloEfectivo = rellenoPrecio || precioKilo || 0;
-  const subtotalPastel = (kilos || 0) * precioKiloEfectivo;
+  // Precios — el precio/kilo BASE se mantiene SIEMPRE. El relleno (si tiene precio > 0) se
+  // SUMA como un extra PLANO (igual que base/oblea/muñeca/velas). Consistente con el POS.
+  const subtotalPastel = (Number(kilos) || 0) * (precioKilo || 0);
   const subtotalExtras = useMemo(() => {
-    return extrasPastel.reduce((sum, extra) => {
+    const base = extrasPastel.reduce((sum, extra) => {
       if (!extrasSeleccionados[extra.id]) return sum;
       return sum + (Number(extra.precio) || 0);
     }, 0);
-  }, [extrasPastel, extrasSeleccionados]);
+    return Math.round((base + (Number(rellenoPrecio) || 0)) * 100) / 100; // relleno plano incluido
+  }, [extrasPastel, extrasSeleccionados, rellenoPrecio]);
   const totalCalculado = subtotalPastel + subtotalExtras;
 
   const handleImagenChange = (e) => {
@@ -233,7 +234,7 @@ export default function ConfettiFormularioPastel() {
         precio_muneca: Number(extrasPastel.find((e) => e.id === "muneca")?.precio) || 0,
         incluye_velas: !!extrasSeleccionados.velas,
         precio_velas: Number(extrasPastel.find((e) => e.id === "velas")?.precio) || 0,
-        precio_kilo_usado: precioKiloEfectivo || 0,
+        precio_kilo_usado: precioKilo || 0,
         subtotal_pastel: subtotalPastel,
         subtotal_extras: subtotalExtras,
         total_calculado: totalCalculado,
@@ -428,8 +429,8 @@ export default function ConfettiFormularioPastel() {
                   className={inputClass}
                 />
                 <p className="mt-1.5 text-xs font-['Plus_Jakarta_Sans'] text-[#7C5C52]">
-                  {precioKiloEfectivo > 0
-                    ? `${kilos || 0} kg × $${precioKiloEfectivo.toLocaleString("es-MX")}/kg = $${subtotalPastel.toLocaleString("es-MX")}`
+                  {precioKilo > 0
+                    ? `${kilos || 0} kg × $${precioKilo.toLocaleString("es-MX")}/kg = $${subtotalPastel.toLocaleString("es-MX")}`
                     : "Precio por kilo: a consultar — te confirmamos por WhatsApp"}
                 </p>
               </div>
@@ -645,12 +646,14 @@ export default function ConfettiFormularioPastel() {
           <div className="sticky top-28">
             <PrecioResumen
               kilos={kilos}
-              precioKilo={precioKiloEfectivo}
+              precioKilo={precioKilo}
               subtotalPastel={subtotalPastel}
               subtotalExtras={subtotalExtras}
               total={totalCalculado}
               sucursalNombre={sucursalSeleccionada?.nombre}
               fechaEntrega={fechaEntrega}
+              rellenoNombre={rellenos}
+              rellenoPrecio={rellenoPrecio}
             />
           </div>
         </div>
@@ -683,8 +686,8 @@ export default function ConfettiFormularioPastel() {
             <div className="flex justify-between">
               <span className="text-[#7C5C52]">Pastel</span>
               <span className="font-medium text-[#2C1A0E]">
-                {precioKiloEfectivo > 0
-                  ? `${kilos || 0} kg × $${precioKiloEfectivo.toLocaleString("es-MX")} = $${subtotalPastel.toLocaleString("es-MX")}`
+                {precioKilo > 0
+                  ? `${kilos || 0} kg × $${precioKilo.toLocaleString("es-MX")} = $${subtotalPastel.toLocaleString("es-MX")}`
                   : "A consultar"}
               </span>
             </div>

@@ -8,8 +8,11 @@ export default function PrecioResumen({
   total,
   sucursalNombre,
   fechaEntrega,
+  rellenoNombre,
+  rellenoPrecio = 0,
 }) {
   const sinPrecio = !precioKilo || precioKilo <= 0;
+  const rellenoCobra = Number(rellenoPrecio) > 0;
 
   return (
     <div className="bg-white rounded-2xl border border-[#F0DDD5] shadow-[0_4px_24px_rgba(92,45,30,0.08)] p-6">
@@ -37,12 +40,23 @@ export default function PrecioResumen({
               : `${kilos || 0} kg × $${precioKilo.toLocaleString("es-MX")} = $${subtotalPastel.toLocaleString("es-MX")}`}
           </span>
         </div>
-        <div className="flex justify-between">
-          <span>Extras</span>
-          <span className="font-semibold text-[#2C1A0E]">
-            {subtotalExtras > 0 ? `$${subtotalExtras.toLocaleString("es-MX")}` : "—"}
-          </span>
-        </div>
+        {rellenoCobra && (
+          <div className="flex justify-between">
+            <span>Relleno{rellenoNombre ? ` · ${rellenoNombre}` : ""}</span>
+            <span className="font-semibold text-[#2C1A0E]">+${Number(rellenoPrecio).toLocaleString("es-MX")}</span>
+          </div>
+        )}
+        {(() => {
+          const extrasSolos = Math.round((Number(subtotalExtras || 0) - (rellenoCobra ? Number(rellenoPrecio) : 0)) * 100) / 100;
+          return (
+            <div className="flex justify-between">
+              <span>Extras</span>
+              <span className="font-semibold text-[#2C1A0E]">
+                {extrasSolos > 0 ? `$${extrasSolos.toLocaleString("es-MX")}` : "—"}
+              </span>
+            </div>
+          );
+        })()}
         <div className="border-t border-[#F0DDD5] pt-2 flex justify-between items-center">
           <span className="font-semibold text-[#2C1A0E]">Total estimado</span>
           <span className="font-['Playfair_Display'] font-semibold text-xl text-[#5C2D1E]">
