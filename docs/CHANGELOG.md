@@ -2,6 +2,23 @@
 
 Orden cronológico inverso. Conventional-ish. El esquema vive en el repo POS (fuente única).
 
+## 2026-06-29 — Auditoría final pre-instalación (Web) + deploy
+> Detalle y bitácora en `AUDITORIA_FINAL/` (workspace).
+- **`index.html`:** título `Base44 APP` → **Pastelería Confetti**; favicon Base44 → `/favicon.svg`.
+  Nuevo **`public/favicon.svg`** propio (pastel rosa Confetti); antes `/favicon.svg` daba 404.
+- **`vercel.json` (nuevo):** rewrite SPA `/(.*) → /index.html` → arregla el **404 al recargar**
+  una subruta. Verificado en vivo: `/confetti/pastel` recargada responde 200.
+- **`ConfettiFormularioPastel.jsx`:** personas/kilos arrancan vacíos (primero personas → sugiere
+  kilos); "Pastel de base" se auto-incluye con kilos > 3.
+- **Precio de relleno → web:** funciona end-to-end. La web lee `rellenos_pastel`/`extras_pastel`
+  por `config_publica` (mig 0029 del POS); `RellenoSelector` muestra `$X/kg` y el total lo usa
+  (consistente con el POS: el relleno con precio sobrescribe el precio/kilo). **0 código nuevo
+  necesario** salvo la vista.
+- **Imágenes:** el catálogo web ahora sirve imágenes re-hospedadas en Supabase Storage (se
+  actualizó `productos.imagen_url`; la vista `catalogo_publico` las pasa). 0 referencias Base44.
+- **Sin restos Base44** en `web/src`. Commit Web: `b0fc850` → Vercel READY (producción,
+  dominio `pasteleria-confetti-wpasteleria-con.vercel.app`).
+
 ## 2026-06-27 (cont. 4) — Bot 60 días validó la web a volumen + apertura de fase MEJORAS
 - **El bot de pruebas largas (60 días, repo del POS) ejercitó la web a volumen:** **30/30 pedidos web** (pastel + catálogo, días pares, semilla fija) enviados desde el formulario real y **recibidos en la sucursal correcta** del POS, con aislamiento RLS intacto en toda la corrida. La web queda respaldada como fiel a Base44.
 - **Próxima fase = MEJORAS** (lista ordenada en el repo POS `docs/MEJORAS_POST_VALIDACION.md`). **#1 = Vercel:** esta web (`Pasteleria-Confetti-web-`) **aún NO tiene proyecto Vercel** → crear uno **APARTE** + env vars Supabase. (El POS ya está en Vercel como `pasteleria-confetti` en preview de `migracion/supabase`.)
