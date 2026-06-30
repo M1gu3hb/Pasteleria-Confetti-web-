@@ -49,7 +49,8 @@ export default function ConfettiFormularioPastel() {
   const [personas, setPersonas] = useState("");
   const [kilos, setKilos] = useState("");
   const [kilosEditadoManual, setKilosEditadoManual] = useState(false);
-  const [precioKilo, setPrecioKilo] = useState(0);
+  const [precioKilo, setPrecioKilo] = useState(0);     // efectivo (puede venir de un relleno especial)
+  const [precioKiloBase, setPrecioKiloBase] = useState(0); // de configuración
   const [ratio, setRatio] = useState(10);
 
   // Extras — mapa { [extraId]: boolean }
@@ -59,7 +60,8 @@ export default function ConfettiFormularioPastel() {
   const [concepto, setConcepto] = useState("");
   const [decorado, setDecorado] = useState("");
   const [rellenos, setRellenos] = useState("");
-  const [rellenoPrecio, setRellenoPrecio] = useState(0);
+  const [rellenoPrecio, setRellenoPrecio] = useState(0); // monto plano (si el relleno es 'plano')
+  const [rellenoInfo, setRellenoInfo] = useState(null);  // relleno normalizado elegido (para el aviso)
   const [leyenda, setLeyenda] = useState("");
 
   // Imagen
@@ -91,9 +93,13 @@ export default function ConfettiFormularioPastel() {
   });
   useEffect(() => {
     if (configLocal) {
-      setPrecioKilo(configLocal.precio_kilo_global || 140);
+      const base = configLocal.precio_kilo_global || 140;
+      setPrecioKiloBase(base);
+      // Solo fija el precio efectivo desde config si no hay un relleno especial activo.
+      setPrecioKilo((prev) => (rellenoInfo?.tipo === "precio_kilo" ? prev : base));
       setRatio(configLocal.ratio_personas_por_kilo || 7);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [configLocal]);
 
   // Calcular kilos sugeridos al cambiar personas. Solo autocompleta si el cliente
@@ -531,14 +537,31 @@ export default function ConfettiFormularioPastel() {
                   value={rellenos}
                   rellenos={rellenosPastel}
                   precioKiloGlobal={precioKilo}
-                  onChange={(relleno, precio) => {
+                  onChange={(relleno, info) => {
                     setRellenos(relleno);
-                    setRellenoPrecio(precio);
+                    setRellenoInfo(info);
+                    if (info && info.tipo === "precio_kilo") {
+                      // Especial: ajusta el precio por kilo, no suma plano.
+                      setPrecioKilo(Number(info.monto) || precioKiloBase);
+                      setRellenoPrecio(0);
+                    } else {
+                      // Plano o sin relleno: precio/kilo de config + monto plano.
+                      setPrecioKilo(precioKiloBase);
+                      setRellenoPrecio(Number(info?.monto) || 0);
+                    }
                   }}
                 />
-                <p className="mt-1.5 text-xs font-['Plus_Jakarta_Sans'] text-[#7C5C52]">
-                  Nuestra especialidad: tres leches con fruta natural 🍓
-                </p>
+                {rellenoInfo?.tipo === "precio_kilo" ? (
+                  <p className="mt-2 text-xs font-['Plus_Jakarta_Sans'] text-[#5C2D1E] bg-[#FDEEF6] border border-[#F0DDD5] rounded-lg px-3 py-2">
+                    ✨ Este relleno ajusta el precio por kilo a{" "}
+                    <strong>${(Number(rellenoInfo.monto) || 0).toLocaleString("es-MX")}/kg</strong>.
+                    El total se actualiza automáticamente.
+                  </p>
+                ) : (
+                  <p className="mt-1.5 text-xs font-['Plus_Jakarta_Sans'] text-[#7C5C52]">
+                    Nuestra especialidad: tres leches con fruta natural 🍓
+                  </p>
+                )}
               </div>
               <div>
                 <label className={labelClass}>Leyenda en el pastel</label>

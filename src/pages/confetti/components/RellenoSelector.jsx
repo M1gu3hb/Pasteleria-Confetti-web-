@@ -1,12 +1,15 @@
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { CaretRight, Check } from "@phosphor-icons/react";
+import { normalizarRelleno } from "@/utils/rellenoPastel";
 
+// onChange(nombre, info) — info = relleno normalizado {id,nombre,tipo,monto} o null
+// al quitar. El padre decide: 'plano' suma monto; 'precio_kilo' ajusta el precio/kg.
 export default function RellenoSelector({ value, onChange, rellenos = [], precioKiloGlobal = 0 }) {
   const [abierto, setAbierto] = useState(false);
 
-  const seleccionar = (nombre, precio) => {
-    onChange(nombre, precio);
+  const seleccionar = (nombre, info) => {
+    onChange(nombre, info);
     setAbierto(false);
   };
 
@@ -57,14 +60,16 @@ export default function RellenoSelector({ value, onChange, rellenos = [], precio
                 <>
                   {/* Opciones: grid aireado, full-width, fácil de tocar en móvil */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                    {rellenos.map((r) => {
+                    {rellenos.map((raw) => {
+                      const r = normalizarRelleno(raw);
                       const activo = value === r.nombre;
-                      const precio = Number(r.precio_kilo) || 0; // valor configurado = monto plano que se SUMA
+                      const esPK = r.tipo === "precio_kilo";
+                      const monto = Number(r.monto) || 0;
                       return (
                         <button
                           key={r.id || r.nombre}
                           type="button"
-                          onClick={() => (activo ? seleccionar("", 0) : seleccionar(r.nombre, precio))}
+                          onClick={() => (activo ? seleccionar("", null) : seleccionar(r.nombre, r))}
                           aria-pressed={activo}
                           className={`group flex items-center justify-between gap-3 w-full px-4 py-3 min-h-[52px] rounded-xl border-2 text-left font-['Plus_Jakarta_Sans'] transition-colors ${
                             activo
@@ -82,13 +87,13 @@ export default function RellenoSelector({ value, onChange, rellenos = [], precio
                             </span>
                             <span className="text-sm font-medium leading-snug break-words">{r.nombre}</span>
                           </span>
-                          {precio > 0 && (
+                          {monto > 0 && (
                             <span
                               className={`shrink-0 text-xs font-bold px-2 py-1 rounded-full ${
                                 activo ? "bg-white/20 text-white" : "bg-[#FDEEF6] text-[#E8579A]"
                               }`}
                             >
-                              +${precio.toLocaleString("es-MX")}
+                              {esPK ? `$${monto.toLocaleString("es-MX")}/kg` : `+$${monto.toLocaleString("es-MX")}`}
                             </span>
                           )}
                         </button>
@@ -96,7 +101,8 @@ export default function RellenoSelector({ value, onChange, rellenos = [], precio
                     })}
                   </div>
                   <p className="mt-3 text-xs font-['Plus_Jakarta_Sans'] text-[#7C5C52]">
-                    Toca de nuevo el relleno elegido para quitarlo. Los rellenos con precio se suman al total.
+                    Toca de nuevo el relleno elegido para quitarlo. Algunos rellenos suman un extra;
+                    otros ajustan el precio por kilo.
                   </p>
                 </>
               )}
