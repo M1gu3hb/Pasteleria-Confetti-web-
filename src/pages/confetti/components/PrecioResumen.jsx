@@ -5,6 +5,7 @@ export default function PrecioResumen({
   precioKilo,
   subtotalPastel,
   subtotalExtras,
+  importeBase = 0,
   total,
   sucursalNombre,
   fechaEntrega,
@@ -38,6 +39,12 @@ export default function PrecioResumen({
             {sinPrecio
               ? `${kilos || 0} kg · A consultar`
               : `${kilos || 0} kg × $${precioKilo.toLocaleString("es-MX")} = $${subtotalPastel.toLocaleString("es-MX")}`}
+          </span>
+        </div>
+        <div className="flex justify-between">
+          <span>Importe de base</span>
+          <span className="font-semibold text-[#2C1A0E]">
+            {Number(importeBase) > 0 ? `$${Number(importeBase).toLocaleString("es-MX")}` : "A confirmar"}
           </span>
         </div>
         {rellenoCobra && (

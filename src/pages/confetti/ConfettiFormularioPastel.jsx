@@ -14,6 +14,7 @@ import { entities, uploadArchivo } from "@/api/entitiesAdapter";
 import SucursalSelector from "./components/SucursalSelector";
 import PrecioResumen from "./components/PrecioResumen";
 import RellenoSelector from "./components/RellenoSelector";
+import { calcularImporteBase } from "@/utils/baseRangos";
 
 const inputClass =
   "w-full px-4 py-3 text-base font-['Plus_Jakarta_Sans'] text-[#2C1A0E] bg-white border-2 border-[#F0DDD5] rounded-xl focus:outline-none focus:border-[#E8579A] focus:ring-2 focus:ring-[#E8579A]/20 placeholder:text-[#C4A89A] transition-colors duration-200";
@@ -102,12 +103,8 @@ export default function ConfettiFormularioPastel() {
     if (!kilosEditadoManual && Number(personas) > 0) setKilos(kilosSugeridos);
   }, [kilosSugeridos, kilosEditadoManual, personas]);
 
-  // Pastel grande (más de 3 kg) → se incluye el "Pastel de base" automáticamente.
-  useEffect(() => {
-    if (Number(kilos) > 3) {
-      setExtrasSeleccionados((prev) => (prev.base ? prev : { ...prev, base: true }));
-    }
-  }, [kilos]);
+  // Fase 02: la base ya NO es un extra (checkbox). Es el "Importe de base" por
+  // rangos: obligatorio y automático según los kilos (se calcula más abajo).
 
   // Fecha mínima: mañana
   const manana = new Date();
@@ -121,10 +118,10 @@ export default function ConfettiFormularioPastel() {
     return diff < 3;
   })();
 
-  // Extras sincronizados desde el POS
+  // Extras sincronizados desde el POS. La base se EXCLUYE: es el importe de base
+  // por rangos (no un extra de checkbox).
   const extrasPastel = useMemo(() => {
     const fallback = [
-      { id: "base", nombre: "Pastel de base", precio: 0, activo: true },
       { id: "oblea", nombre: "Oblea personalizada", precio: 0, activo: true },
       { id: "muneca", nombre: "Muñeca decorativa", precio: 0, activo: true },
       { id: "velas", nombre: "Velas", precio: 0, activo: true },
@@ -132,11 +129,18 @@ export default function ConfettiFormularioPastel() {
     if (!configLocal?.extras_pastel) return fallback.filter((e) => e.activo);
     try {
       const arr = JSON.parse(configLocal.extras_pastel);
-      return Array.isArray(arr) ? arr.filter((e) => e?.activo) : fallback;
+      return Array.isArray(arr) ? arr.filter((e) => e?.activo && e.id !== "base") : fallback;
     } catch {
       return fallback;
     }
   }, [configLocal?.extras_pastel]);
+
+  // Importe de base por rangos de kilos (obligatorio, automático). Mismo cálculo
+  // que el POS, leído de config_publica.base_rangos.
+  const importeBase = useMemo(
+    () => calcularImporteBase(kilos, configLocal?.base_rangos),
+    [kilos, configLocal?.base_rangos]
+  );
 
   // Rellenos sincronizados desde el POS (espejo de extras)
   const rellenosPastel = useMemo(() => {
@@ -159,7 +163,7 @@ export default function ConfettiFormularioPastel() {
     }, 0);
     return Math.round((base + (Number(rellenoPrecio) || 0)) * 100) / 100; // relleno plano incluido
   }, [extrasPastel, extrasSeleccionados, rellenoPrecio]);
-  const totalCalculado = subtotalPastel + subtotalExtras;
+  const totalCalculado = subtotalPastel + subtotalExtras + importeBase;
 
   const handleImagenChange = (e) => {
     const file = e.target.files?.[0];
@@ -232,8 +236,8 @@ export default function ConfettiFormularioPastel() {
         decorado: decorado || null,
         rellenos: rellenos || null,
         leyenda_pastel: leyenda || null,
-        incluye_base: !!extrasSeleccionados.base,
-        precio_base: Number(extrasPastel.find((e) => e.id === "base")?.precio) || 0,
+        incluye_base: importeBase > 0,
+        precio_base: importeBase,
         incluye_oblea: !!extrasSeleccionados.oblea,
         precio_oblea: Number(extrasPastel.find((e) => e.id === "oblea")?.precio) || 0,
         incluye_muneca: !!extrasSeleccionados.muneca,
@@ -477,6 +481,21 @@ export default function ConfettiFormularioPastel() {
                 })}
               </div>
             </div>
+
+            {/* Importe de base — obligatorio, automático por kilos */}
+            <div className="mt-5">
+              <div className="flex items-center justify-between gap-3 p-3 rounded-xl border-2 border-[#F0DDD5] bg-[#FFF8F4] font-['Plus_Jakarta_Sans'] text-sm">
+                <span className="flex flex-col">
+                  <span className="font-medium text-[#2C1A0E]">Importe de base</span>
+                  <span className="text-xs text-[#7C5C52]">
+                    Se incluye automáticamente según los kilos de tu pastel.
+                  </span>
+                </span>
+                <span className="font-semibold text-[#5C2D1E] whitespace-nowrap">
+                  {importeBase > 0 ? `$${importeBase.toLocaleString("es-MX")}` : "A confirmar"}
+                </span>
+              </div>
+            </div>
           </section>
 
           {/* ④ Concepto */}
@@ -656,6 +675,7 @@ export default function ConfettiFormularioPastel() {
               precioKilo={precioKilo}
               subtotalPastel={subtotalPastel}
               subtotalExtras={subtotalExtras}
+              importeBase={importeBase}
               total={totalCalculado}
               sucursalNombre={sucursalSeleccionada?.nombre}
               fechaEntrega={fechaEntrega}
@@ -696,6 +716,12 @@ export default function ConfettiFormularioPastel() {
                 {precioKilo > 0
                   ? `${kilos || 0} kg × $${precioKilo.toLocaleString("es-MX")} = $${subtotalPastel.toLocaleString("es-MX")}`
                   : "A consultar"}
+              </span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-[#7C5C52]">Importe de base</span>
+              <span className="font-medium text-[#2C1A0E]">
+                {importeBase > 0 ? `$${importeBase.toLocaleString("es-MX")}` : "A confirmar"}
               </span>
             </div>
             <div className="flex justify-between">
