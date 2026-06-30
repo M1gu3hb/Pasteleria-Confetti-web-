@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Cake, WhatsappLogo, ArrowRight } from "@phosphor-icons/react";
 import { useQuery } from "@tanstack/react-query";
@@ -10,8 +10,10 @@ const WHATSAPP_PRINCIPAL = "https://wa.me/525593502639";
 
 export default function ConfettiCatalogo() {
   const navigate = useNavigate();
-  const [categoriaActiva, setCategoriaActiva] = useState("Todos");
 
+  // Catálogo PLANO (CAMBIOS_V2 Fase 05): la vitrina muestra TODOS los productos
+  // seguidos, sin filtros ni encabezados por categoría. Las categorías solo se
+  // usan al hacer un pedido de catálogo (ProductoSearch), no aquí.
   const { data: productos = [], isLoading } = useQuery({
     queryKey: ["productosWeb"],
     queryFn: () =>
@@ -21,16 +23,6 @@ export default function ConfettiCatalogo() {
         100
       ),
   });
-
-  const categorias = useMemo(() => {
-    const unicas = [...new Set(productos.map((p) => p.categoria_nombre).filter(Boolean))];
-    return ["Todos", ...unicas];
-  }, [productos]);
-
-  const productosFiltrados =
-    categoriaActiva === "Todos"
-      ? productos
-      : productos.filter((p) => p.categoria_nombre === categoriaActiva);
 
   const handlePedir = (producto) => {
     navigate(`/confetti/productos?producto=${producto.id}`);
@@ -48,24 +40,7 @@ export default function ConfettiCatalogo() {
           </p>
         </ConfettiReveal>
 
-        {/* Filtros de categoría */}
-        <div className="mt-8 flex gap-2 overflow-x-auto pb-2 md:justify-center [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-          {categorias.map((cat) => (
-            <button
-              key={cat}
-              onClick={() => setCategoriaActiva(cat)}
-              className={`shrink-0 px-4 py-2 rounded-full text-sm font-['Plus_Jakarta_Sans'] font-medium border transition-colors ${
-                categoriaActiva === cat
-                  ? "bg-[#E8579A] text-white border-[#E8579A]"
-                  : "bg-white text-[#5C2D1E] border-[#F0DDD5] hover:border-[#E8579A]/50"
-              }`}
-            >
-              {cat}
-            </button>
-          ))}
-        </div>
-
-        {/* Grid de productos */}
+        {/* Grid de productos (plano, sin filtros por categoría) */}
         {isLoading ? (
           <div className="mt-10 grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-6">
             {Array(6)
@@ -84,7 +59,7 @@ export default function ConfettiCatalogo() {
                 </div>
               ))}
           </div>
-        ) : productosFiltrados.length === 0 ? (
+        ) : productos.length === 0 ? (
           <div className="mt-16 text-center max-w-md mx-auto">
             <Cake size={64} weight="thin" className="text-[#E8579A] mx-auto" />
             <h2 className="mt-4 font-['Playfair_Display'] text-2xl font-semibold text-[#2C1A0E]">
@@ -105,7 +80,7 @@ export default function ConfettiCatalogo() {
           </div>
         ) : (
           <div className="mt-10 grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-6">
-            {productosFiltrados.map((producto, index) => (
+            {productos.map((producto, index) => (
               <ProductCard key={producto.id} producto={producto} index={index} onPedir={handlePedir} />
             ))}
           </div>
