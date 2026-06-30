@@ -13,6 +13,7 @@
 // NO es un find-replace: el contrato no cambia, solo la fuente de datos.
 // =====================================================================
 import { supabase } from './supabaseClient';
+import { normalizarImagen } from '@/utils/normalizarImagen';
 
 // Entidad Base44 (PascalCase) -> relación pública (snake_case)
 const TABLE_MAP = {
@@ -112,11 +113,14 @@ export const entities = new Proxy({}, {
 // el formulario del pastel (uploadResult?.file_url).
 export async function uploadArchivo(file) {
   if (!file) return { file_url: null };
-  const ext = (file.name?.split('.').pop() || 'jpg').toLowerCase();
+  // Deja la imagen DERECHA (hornea la orientación EXIF en los píxeles) antes de subir, para que
+  // el POS del pastelero la vea bien. Degradación segura: si falla, usa el archivo original.
+  const archivo = await normalizarImagen(file);
+  const ext = (archivo.name?.split('.').pop() || 'jpg').toLowerCase();
   const path = `pedidos/${crypto.randomUUID()}.${ext}`;
   const { error } = await supabase.storage
     .from('web-uploads')
-    .upload(path, file, { cacheControl: '3600', upsert: false, contentType: file.type || undefined });
+    .upload(path, archivo, { cacheControl: '3600', upsert: false, contentType: archivo.type || undefined });
   if (error) throw new Error(`[web-uploads] ${error.message}`);
   const { data } = supabase.storage.from('web-uploads').getPublicUrl(path);
   return { file_url: data.publicUrl };
