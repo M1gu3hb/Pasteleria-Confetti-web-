@@ -2,6 +2,14 @@
 
 Orden cronológico inverso. Conventional-ish. El esquema vive en el repo POS (fuente única).
 
+## 2026-06-30 — Normalizar orientación de la imagen de referencia al subir
+> Para que el POS del pastelero la vea SIEMPRE derecha. No toca dinero ni datos.
+- `src/utils/normalizarImagen.js` (nuevo): hornea la orientación EXIF en los píxeles y re-encoda
+  la imagen derecha (sin EXIF); degradación segura (si falla, sube el original).
+- `src/api/entitiesAdapter.js` → `uploadArchivo` la aplica antes de subir a `web-uploads`.
+- Causa raíz: fotos/screenshots de celular guardan la rotación en EXIF; algunos visores (PDF del
+  POS, etc.) no lo leen → salían giradas. Commit `a17b6de` → Vercel READY.
+
 ## 2026-06-29 (cont.) — Relleno = extra PLANO que se SUMA (no reemplaza) + layout del selector
 > Detalle en `AUDITORIA_FINAL/REPORTES/BITACORA.md` (Fase 4).
 - `ConfettiFormularioPastel.jsx`: el relleno ya no reemplaza el precio/kilo; base se mantiene y el
