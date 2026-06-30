@@ -36,7 +36,6 @@ export default function ConfettiFormularioPastel() {
   // Datos cliente
   const [clienteNombre, setClienteNombre] = useState("");
   const [clienteTelefono, setClienteTelefono] = useState("");
-  const [clienteEmail, setClienteEmail] = useState("");
   const [requiereEntrega, setRequiereEntrega] = useState(false);
   const [direccionEntrega, setDireccionEntrega] = useState("");
 
@@ -189,13 +188,15 @@ export default function ConfettiFormularioPastel() {
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
-  const emailValido = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(clienteEmail);
+  // Relleno obligatorio solo si hay rellenos configurados (si no, no bloquea).
+  const rellenoOk = rellenosPastel.length === 0 || !!rellenos;
 
   const puedeEnviar =
     clienteNombre &&
     clienteTelefono &&
-    emailValido &&
+    rellenoOk &&
     fechaEntrega &&
+    Number(personas) > 0 &&
     Number(kilos) > 0 &&
     sucursalSeleccionada;
 
@@ -231,7 +232,6 @@ export default function ConfettiFormularioPastel() {
         tipo_pedido: "pastel_personalizado",
         cliente_nombre: clienteNombre,
         cliente_telefono: clienteTelefono,
-        cliente_email: clienteEmail || null,
         cliente_direccion: requiereEntrega ? direccionEntrega : null,
         requiere_entrega: requiereEntrega,
         fecha_entrega: fechaEntrega,
@@ -335,21 +335,6 @@ export default function ConfettiFormularioPastel() {
                   />
                 </div>
               </div>
-              <div>
-                <label className={labelClass}>Correo electrónico *</label>
-                <input
-                  type="email"
-                  value={clienteEmail}
-                  onChange={(e) => setClienteEmail(e.target.value)}
-                  placeholder="Para contactarte sobre tu pedido"
-                  className={inputClass}
-                />
-                {clienteEmail && !emailValido && (
-                  <p className="mt-1.5 text-xs font-['Plus_Jakarta_Sans'] text-red-500">
-                    Ingresa un correo válido
-                  </p>
-                )}
-              </div>
               <label className="flex items-center gap-3 cursor-pointer font-['Plus_Jakarta_Sans'] text-sm text-[#2C1A0E]">
                 <input
                   type="checkbox"
@@ -412,7 +397,7 @@ export default function ConfettiFormularioPastel() {
             <SectionTitle>③ Tamaño del pastel</SectionTitle>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className={labelClass}>¿Para cuántas personas?</label>
+                <label className={labelClass}>¿Para cuántas personas? *</label>
                 <input
                   type="number"
                   inputMode="numeric"
@@ -431,7 +416,7 @@ export default function ConfettiFormularioPastel() {
                 </p>
               </div>
               <div>
-                <label className={labelClass}>Kilos del pastel</label>
+                <label className={labelClass}>Kilos del pastel *</label>
                 <input
                   type="number"
                   inputMode="decimal"
@@ -532,7 +517,9 @@ export default function ConfettiFormularioPastel() {
                 />
               </div>
               <div>
-                <label className={labelClass}>Relleno</label>
+                <label className={labelClass}>
+                  Relleno{rellenosPastel.length > 0 ? " *" : ""}
+                </label>
                 <RellenoSelector
                   value={rellenos}
                   rellenos={rellenosPastel}
