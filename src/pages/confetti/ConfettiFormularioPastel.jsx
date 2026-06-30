@@ -207,6 +207,12 @@ export default function ConfettiFormularioPastel() {
         imagenUrl = uploadResult?.file_url || null;
       }
 
+      // Lista genérica de extras elegidos (espejo del POS). Se persiste en
+      // pedidos.extras_seleccionados vía la RPC crear_pedido_web (0033).
+      const extras_seleccionados = extrasPastel
+        .filter((e) => extrasSeleccionados[e.id])
+        .map((e) => ({ id: e.id, nombre: e.nombre, precio: Number(e.precio) || 0 }));
+
       const pedidoData = {
         sucursal_id: sucursalSeleccionada.id,
         sucursal_nombre: sucursalSeleccionada.nombre,
@@ -234,6 +240,7 @@ export default function ConfettiFormularioPastel() {
         precio_muneca: Number(extrasPastel.find((e) => e.id === "muneca")?.precio) || 0,
         incluye_velas: !!extrasSeleccionados.velas,
         precio_velas: Number(extrasPastel.find((e) => e.id === "velas")?.precio) || 0,
+        extras_seleccionados,
         precio_kilo_usado: precioKilo || 0,
         subtotal_pastel: subtotalPastel,
         subtotal_extras: subtotalExtras,
