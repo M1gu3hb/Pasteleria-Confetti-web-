@@ -6,6 +6,8 @@ export default function PrecioResumen({
   subtotalPastel,
   subtotalExtras,
   importeBase = 0,
+  cotizaAparte = false,
+  topeBaseKg = 0,
   total,
   sucursalNombre,
   fechaEntrega,
@@ -41,12 +43,18 @@ export default function PrecioResumen({
               : `${kilos || 0} kg × $${precioKilo.toLocaleString("es-MX")} = $${subtotalPastel.toLocaleString("es-MX")}`}
           </span>
         </div>
-        <div className="flex justify-between">
-          <span>Importe de base</span>
-          <span className="font-semibold text-[#2C1A0E]">
-            {Number(importeBase) > 0 ? `$${Number(importeBase).toLocaleString("es-MX")}` : "A confirmar"}
-          </span>
-        </div>
+        {/* FIX 2: importe 0 no muestra línea; cotiza aparte muestra leyenda. */}
+        {cotizaAparte ? (
+          <div className="flex justify-between">
+            <span>Importe de base</span>
+            <span className="font-semibold text-[#8B5E3C]">Se cotiza aparte</span>
+          </div>
+        ) : Number(importeBase) > 0 ? (
+          <div className="flex justify-between">
+            <span>Importe de base</span>
+            <span className="font-semibold text-[#2C1A0E]">${Number(importeBase).toLocaleString("es-MX")}</span>
+          </div>
+        ) : null}
         {rellenoCobra && (
           <div className="flex justify-between">
             <span>Relleno{rellenoNombre ? ` · ${rellenoNombre}` : ""}</span>
@@ -67,9 +75,14 @@ export default function PrecioResumen({
         <div className="border-t border-[#F0DDD5] pt-2 flex justify-between items-center">
           <span className="font-semibold text-[#2C1A0E]">Total estimado</span>
           <span className="font-['Playfair_Display'] font-semibold text-xl text-[#5C2D1E]">
-            {sinPrecio && subtotalExtras === 0 ? "A consultar" : `$${total.toLocaleString("es-MX")}`}
+            {cotizaAparte || (sinPrecio && subtotalExtras === 0) ? "A consultar" : `$${total.toLocaleString("es-MX")}`}
           </span>
         </div>
+        {cotizaAparte && (
+          <p className="text-xs text-[#8B5E3C]">
+            Los pasteles de más de {topeBaseKg} kg se cotizan aparte — te confirmamos el precio por WhatsApp.
+          </p>
+        )}
       </div>
       <p className="mt-4 text-xs font-['Plus_Jakarta_Sans'] text-[#7C5C52] leading-relaxed">
         💡 El precio final puede variar según el diseño y disponibilidad. Te confirmamos el monto

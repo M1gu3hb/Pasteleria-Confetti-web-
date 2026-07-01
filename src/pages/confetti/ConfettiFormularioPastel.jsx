@@ -14,7 +14,7 @@ import { entities, uploadArchivo } from "@/api/entitiesAdapter";
 import SucursalSelector from "./components/SucursalSelector";
 import PrecioResumen from "./components/PrecioResumen";
 import RellenoSelector from "./components/RellenoSelector";
-import { calcularImporteBase } from "@/utils/baseRangos";
+import { calcularImporteBase, rangoMaximoKg } from "@/utils/baseRangos";
 
 const inputClass =
   "w-full px-4 py-3 text-base font-['Plus_Jakarta_Sans'] text-[#2C1A0E] bg-white border-2 border-[#F0DDD5] rounded-xl focus:outline-none focus:border-[#E8579A] focus:ring-2 focus:ring-[#E8579A]/20 placeholder:text-[#C4A89A] transition-colors duration-200";
@@ -140,11 +140,17 @@ export default function ConfettiFormularioPastel() {
     }
   }, [configLocal?.extras_pastel]);
 
-  // Importe de base por rangos de kilos (obligatorio, automático). Mismo cálculo
-  // que el POS, leído de config_publica.base_rangos.
-  const importeBase = useMemo(
+  // Importe de base por rangos de kilos (automático). Mismo cálculo que el POS,
+  // leído de config_publica.base_rangos. FIX 2: devuelve { importe, cotizaAparte }.
+  const baseInfo = useMemo(
     () => calcularImporteBase(kilos, configLocal?.base_rangos),
     [kilos, configLocal?.base_rangos]
+  );
+  const importeBase = baseInfo.importe;            // number (0 = no se cobra base)
+  const baseCotizaAparte = baseInfo.cotizaAparte;  // true = pastel grande, se cotiza aparte
+  const topeBaseKg = useMemo(
+    () => rangoMaximoKg(configLocal?.base_rangos),
+    [configLocal?.base_rangos]
   );
 
   // Rellenos sincronizados desde el POS (espejo de extras)
@@ -473,20 +479,34 @@ export default function ConfettiFormularioPastel() {
               </div>
             </div>
 
-            {/* Importe de base — obligatorio, automático por kilos */}
-            <div className="mt-5">
-              <div className="flex items-center justify-between gap-3 p-3 rounded-xl border-2 border-[#F0DDD5] bg-[#FFF8F4] font-['Plus_Jakarta_Sans'] text-sm">
-                <span className="flex flex-col">
-                  <span className="font-medium text-[#2C1A0E]">Importe de base</span>
-                  <span className="text-xs text-[#7C5C52]">
-                    Se incluye automáticamente según los kilos de tu pastel.
+            {/* Importe de base — automático por kilos (FIX 2):
+                - cotiza aparte (pastel grande): leyenda, sin base al total.
+                - importe > 0: se muestra y se cobra.
+                - importe 0 (rango sin costo o fuera de rango): NO se muestra la línea. */}
+            {baseCotizaAparte ? (
+              <div className="mt-5">
+                <div className="flex items-start gap-2 p-3 rounded-xl border-2 border-[#F0DDD5] bg-[#FEF0E7] font-['Plus_Jakarta_Sans'] text-sm text-[#8B5E3C]">
+                  <Warning size={18} className="shrink-0 mt-0.5" />
+                  <span>
+                    Los pasteles de más de {topeBaseKg} kg se cotizan aparte — te confirmamos el precio por WhatsApp.
                   </span>
-                </span>
-                <span className="font-semibold text-[#5C2D1E] whitespace-nowrap">
-                  {importeBase > 0 ? `$${importeBase.toLocaleString("es-MX")}` : "A confirmar"}
-                </span>
+                </div>
               </div>
-            </div>
+            ) : importeBase > 0 ? (
+              <div className="mt-5">
+                <div className="flex items-center justify-between gap-3 p-3 rounded-xl border-2 border-[#F0DDD5] bg-[#FFF8F4] font-['Plus_Jakarta_Sans'] text-sm">
+                  <span className="flex flex-col">
+                    <span className="font-medium text-[#2C1A0E]">Importe de base</span>
+                    <span className="text-xs text-[#7C5C52]">
+                      Se incluye automáticamente según los kilos de tu pastel.
+                    </span>
+                  </span>
+                  <span className="font-semibold text-[#5C2D1E] whitespace-nowrap">
+                    ${importeBase.toLocaleString("es-MX")}
+                  </span>
+                </div>
+              </div>
+            ) : null}
           </section>
 
           {/* ④ Concepto */}
@@ -686,6 +706,8 @@ export default function ConfettiFormularioPastel() {
               subtotalPastel={subtotalPastel}
               subtotalExtras={subtotalExtras}
               importeBase={importeBase}
+              cotizaAparte={baseCotizaAparte}
+              topeBaseKg={topeBaseKg}
               total={totalCalculado}
               sucursalNombre={sucursalSeleccionada?.nombre}
               fechaEntrega={fechaEntrega}
@@ -707,9 +729,9 @@ export default function ConfettiFormularioPastel() {
           </span>
           <span className="flex items-center gap-2">
             <span className="font-['Playfair_Display'] text-xl font-bold text-[#E8579A]">
-              {totalCalculado > 0
-                ? `$${totalCalculado.toLocaleString("es-MX")}`
-                : "A consultar"}
+              {baseCotizaAparte || totalCalculado <= 0
+                ? "A consultar"
+                : `$${totalCalculado.toLocaleString("es-MX")}`}
             </span>
             <ChevronUp
               className={`w-4 h-4 text-[#5C2D1E] transition-transform ${
@@ -728,12 +750,17 @@ export default function ConfettiFormularioPastel() {
                   : "A consultar"}
               </span>
             </div>
-            <div className="flex justify-between">
-              <span className="text-[#7C5C52]">Importe de base</span>
-              <span className="font-medium text-[#2C1A0E]">
-                {importeBase > 0 ? `$${importeBase.toLocaleString("es-MX")}` : "A confirmar"}
-              </span>
-            </div>
+            {baseCotizaAparte ? (
+              <div className="flex justify-between">
+                <span className="text-[#7C5C52]">Importe de base</span>
+                <span className="font-medium text-[#8B5E3C]">Se cotiza aparte</span>
+              </div>
+            ) : importeBase > 0 ? (
+              <div className="flex justify-between">
+                <span className="text-[#7C5C52]">Importe de base</span>
+                <span className="font-medium text-[#2C1A0E]">${importeBase.toLocaleString("es-MX")}</span>
+              </div>
+            ) : null}
             <div className="flex justify-between">
               <span className="text-[#7C5C52]">Extras</span>
               <span className="font-medium text-[#2C1A0E]">
@@ -745,9 +772,9 @@ export default function ConfettiFormularioPastel() {
             <div className="flex justify-between border-t border-[#F0DDD5] pt-1.5 font-bold">
               <span className="text-[#2C1A0E]">Total estimado</span>
               <span className="text-[#E8579A]">
-                {totalCalculado > 0
-                  ? `$${totalCalculado.toLocaleString("es-MX")}`
-                  : "A consultar"}
+                {baseCotizaAparte || totalCalculado <= 0
+                  ? "A consultar"
+                  : `$${totalCalculado.toLocaleString("es-MX")}`}
               </span>
             </div>
           </div>
