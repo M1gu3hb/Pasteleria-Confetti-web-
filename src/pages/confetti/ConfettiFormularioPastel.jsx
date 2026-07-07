@@ -108,6 +108,16 @@ export default function ConfettiFormularioPastel() {
     if (!kilosEditadoManual && Number(personas) > 0) setKilos(kilosSugeridos);
   }, [kilosSugeridos, kilosEditadoManual, personas]);
 
+  // Entrega a domicilio SOLO para pedidos grandes (≥ 20 kg). Si los kilos bajan
+  // de 20 y estaba activada, se desactiva y se limpia la dirección.
+  const puedeEntregaDomicilio = (Number(kilos) || 0) >= 20;
+  useEffect(() => {
+    if (!puedeEntregaDomicilio && requiereEntrega) {
+      setRequiereEntrega(false);
+      setDireccionEntrega("");
+    }
+  }, [puedeEntregaDomicilio, requiereEntrega]);
+
   // Fase 02: la base ya NO es un extra (checkbox). Es el "Importe de base" por
   // rangos: obligatorio y automático según los kilos (se calcula más abajo).
 
@@ -341,16 +351,22 @@ export default function ConfettiFormularioPastel() {
                   />
                 </div>
               </div>
-              <label className="flex items-center gap-3 cursor-pointer font-['Plus_Jakarta_Sans'] text-sm text-[#2C1A0E]">
+              <label className={`flex items-center gap-3 font-['Plus_Jakarta_Sans'] text-sm text-[#2C1A0E] ${puedeEntregaDomicilio ? 'cursor-pointer' : 'cursor-not-allowed opacity-60'}`}>
                 <input
                   type="checkbox"
                   checked={requiereEntrega}
+                  disabled={!puedeEntregaDomicilio}
                   onChange={(e) => setRequiereEntrega(e.target.checked)}
-                  className="w-5 h-5 accent-[#E8579A]"
+                  className="w-5 h-5 accent-[#E8579A] disabled:opacity-50"
                 />
                 Sí, necesito entrega a domicilio
               </label>
-              {requiereEntrega && (
+              {!puedeEntregaDomicilio && (
+                <p className="text-xs text-[#8a6d57] font-['Plus_Jakarta_Sans'] -mt-1">
+                  El envío a domicilio está disponible a partir de 20 kg.
+                </p>
+              )}
+              {requiereEntrega && puedeEntregaDomicilio && (
                 <div>
                   <label className={labelClass}>Dirección de entrega</label>
                   <input
