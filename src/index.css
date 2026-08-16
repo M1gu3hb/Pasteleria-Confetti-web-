@@ -133,3 +133,59 @@
   .cta-glow-primary,
   .cta-glow-secondary { animation: none; }
 }
+
+/* ─────────────────────────────────────────────────────────────────────────
+   "FALTA AQUÍ" — señalar el campo pendiente al intentar enviar el pedido.
+
+   POR QUÉ EXISTE: dos clientes reales no pudieron terminar el formulario.
+   No fallaba nada: el botón de enviar se quedaba gris y la página NO decía
+   cuál de los siete campos obligatorios faltaba. Quien lo intentó es gente
+   mayor, en celular, en una página larga. Un asterisco discreto no basta:
+   esto tiene que GRITAR dónde está el problema.
+
+   `.campo-anclado` va SIEMPRE puesto, no sólo al resaltar. Lleva su propio
+   padding compensado con margen negativo para que encender el resaltado no
+   mueva ni un píxel del formulario, y el scroll-margin evita que el campo
+   quede tapado por la barra superior al hacer scroll.
+   ───────────────────────────────────────────────────────────────────────── */
+.campo-anclado {
+  border-radius: 16px;
+  padding: 8px;
+  margin: -8px;
+  scroll-margin-top: 96px;
+}
+
+.campo-falta {
+  animation:
+    campoFaltaTiron 0.45s ease-in-out 0s 2,
+    campoFaltaLatido 1.15s ease-in-out 0s 4;
+}
+
+/* El latido: anillo rosa grueso que crece y se enciende. */
+@keyframes campoFaltaLatido {
+  0%, 100% {
+    box-shadow: 0 0 0 3px rgba(232, 87, 154, 0.9);
+    background-color: rgba(255, 236, 244, 0.85);
+  }
+  50% {
+    box-shadow: 0 0 0 7px rgba(232, 87, 154, 1), 0 0 30px 8px rgba(232, 87, 154, 0.5);
+    background-color: rgba(255, 214, 232, 0.95);
+  }
+}
+
+/* El tirón inicial: dos sacudidas cortas que atrapan el ojo aunque la
+   persona esté mirando otra parte de la pantalla. */
+@keyframes campoFaltaTiron {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-7px); }
+  75% { transform: translateX(7px); }
+}
+
+/* Sin movimiento: se queda el anillo fijo, que es lo que de verdad informa. */
+@media (prefers-reduced-motion: reduce) {
+  .campo-falta {
+    animation: none;
+    box-shadow: 0 0 0 4px rgba(232, 87, 154, 1);
+    background-color: rgba(255, 225, 238, 0.95);
+  }
+}

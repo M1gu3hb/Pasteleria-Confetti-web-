@@ -77,6 +77,35 @@ export default function ConfettiFormularioPastel() {
   const [sinSucursalError, setSinSucursalError] = useState(false);
   const [mostrarResumenMovil, setMostrarResumenMovil] = useState(false);
 
+  // ── "FALTA AQUÍ" ────────────────────────────────────────────────────────
+  // Dos clientes reales no pudieron terminar el pedido. No estaba roto: el
+  // botón de enviar se quedaba gris y la pantalla NO decía cuál de los siete
+  // campos obligatorios faltaba, repartidos en siete secciones de una página
+  // larga de celular. El aviso "completa todos los campos requeridos" SÍ
+  // existía en el código, pero vivía dentro del onClick de un botón
+  // deshabilitado: era inalcanzable.
+  //
+  // `intentoEnvio` se enciende al primer toque del botón y ya no se apaga: a
+  // partir de ahí la lista de pendientes se recalcula en cada render, así que
+  // se va vaciando sola conforme la persona llena los campos.
+  const [intentoEnvio, setIntentoEnvio] = useState(false);
+  const [campoResaltado, setCampoResaltado] = useState(null);
+  const resaltadoTimer = useRef(null);
+
+  const refNombre = useRef(null);
+  const refTelefono = useRef(null);
+  const refFecha = useRef(null);
+  const refPersonas = useRef(null);
+  const refKilos = useRef(null);
+  const refRelleno = useRef(null);
+  const refSucursal = useRef(null);
+
+  // Al desmontar, cancelar el temporizador del resaltado.
+  // OJO: `clearTimeout` se llama SUELTO, nunca guardado en un objeto y llamado
+  // como método — hacerlo así lanza "Illegal invocation" en Chrome y, desde un
+  // cleanup de efecto, tumba el árbol de React entero (nos pasó en el POS).
+  useEffect(() => () => clearTimeout(resaltadoTimer.current), []);
+
   const { data: sucursales = [] } = useQuery({
     queryKey: ["sucursalesActivas"],
     queryFn: () =>
@@ -207,19 +236,61 @@ export default function ConfettiFormularioPastel() {
   // Relleno obligatorio solo si hay rellenos configurados (si no, no bloquea).
   const rellenoOk = rellenosPastel.length === 0 || !!rellenos;
 
-  const puedeEnviar =
-    clienteNombre &&
-    clienteTelefono &&
-    rellenoOk &&
-    fechaEntrega &&
-    Number(personas) > 0 &&
-    Number(kilos) > 0 &&
-    sucursalSeleccionada;
+  // Los siete campos obligatorios, cada uno con el nombre que la persona ve en
+  // pantalla y la referencia al bloque donde vive. El ORDEN es el de la página,
+  // para que "ir al primero que falta" lleve siempre hacia arriba y no salte.
+  const camposRequeridos = [
+    { clave: "nombre",   etiqueta: "Tu nombre completo",           ok: !!String(clienteNombre).trim(),   ref: refNombre,   seccion: "① Tus datos de contacto" },
+    { clave: "telefono", etiqueta: "Tu teléfono de WhatsApp",      ok: !!String(clienteTelefono).trim(), ref: refTelefono, seccion: "① Tus datos de contacto" },
+    { clave: "fecha",    etiqueta: "La fecha de entrega",          ok: !!fechaEntrega,                   ref: refFecha,    seccion: "② ¿Cuándo lo necesitas?" },
+    { clave: "personas", etiqueta: "Para cuántas personas es",     ok: Number(personas) > 0,             ref: refPersonas, seccion: "③ Tamaño del pastel" },
+    { clave: "kilos",    etiqueta: "Los kilos del pastel",         ok: Number(kilos) > 0,                ref: refKilos,    seccion: "③ Tamaño del pastel" },
+    { clave: "relleno",  etiqueta: "El relleno del pastel",        ok: rellenoOk,                        ref: refRelleno,  seccion: "④ El concepto de tu pastel" },
+    { clave: "sucursal", etiqueta: "La sucursal donde lo recoges", ok: !!sucursalSeleccionada,           ref: refSucursal, seccion: "⑥ ¿En qué sucursal recoges?" },
+  ];
+
+  const puedeEnviar = camposRequeridos.every((c) => c.ok);
+
+  // Se recalcula en cada render: la lista se vacía sola conforme se llenan.
+  const faltantes = intentoEnvio ? camposRequeridos.filter((c) => !c.ok) : [];
+
+  // Lleva la pantalla al campo y lo hace GRITAR durante ~4.6 s.
+  const irACampo = (campo) => {
+    const el = campo?.ref?.current;
+    if (!el) return;
+    try {
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+    } catch {
+      el.scrollIntoView();
+    }
+    setCampoResaltado(campo.clave);
+    clearTimeout(resaltadoTimer.current);
+    resaltadoTimer.current = setTimeout(() => setCampoResaltado(null), 4600);
+    // El foco va DESPUÉS del scroll y sin volver a mover la vista: en celular,
+    // enfocar de golpe abre el teclado y tapa justo lo que queremos enseñar.
+    setTimeout(() => {
+      const control = el.querySelector("input, textarea, button");
+      if (control) {
+        try { control.focus({ preventScroll: true }); } catch { /* da igual */ }
+      }
+    }, 700);
+  };
+
+  // `campo-anclado` va siempre (reserva el espacio del anillo, así encenderlo
+  // no mueve el formulario); `campo-falta` es el que grita.
+  const claseCampo = (clave) =>
+    `campo-anclado${campoResaltado === clave ? " campo-falta" : ""}`;
 
   const handleEnviarPedido = async () => {
-    if (!puedeEnviar) {
-      setSinSucursalError(!sucursalSeleccionada);
-      setError("Por favor completa todos los campos requeridos");
+    // Ya NO se sale en silencio. Si falta algo, lo DICE, lo LISTA y lleva al
+    // primero que falta. El botón por eso está siempre activo: un botón gris
+    // sin explicación es exactamente lo que dejó a dos clientes fuera.
+    const pendientes = camposRequeridos.filter((c) => !c.ok);
+    if (pendientes.length > 0) {
+      setIntentoEnvio(true);
+      setSinSucursalError(pendientes.some((c) => c.clave === "sucursal"));
+      setError(null);
+      irACampo(pendientes[0]);
       return;
     }
 
@@ -324,7 +395,7 @@ export default function ConfettiFormularioPastel() {
           <section>
             <SectionTitle>① Tus datos de contacto</SectionTitle>
             <div className="space-y-4">
-              <div>
+              <div ref={refNombre} className={claseCampo("nombre")}>
                 <label className={labelClass}>Nombre completo *</label>
                 <input
                   type="text"
@@ -334,7 +405,7 @@ export default function ConfettiFormularioPastel() {
                   className={inputClass}
                 />
               </div>
-              <div>
+              <div ref={refTelefono} className={claseCampo("telefono")}>
                 <label className={labelClass}>Teléfono / WhatsApp *</label>
                 <div className="relative">
                   <WhatsappLogo
@@ -385,7 +456,7 @@ export default function ConfettiFormularioPastel() {
           <section>
             <SectionTitle>② ¿Cuándo lo necesitas?</SectionTitle>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
+              <div ref={refFecha} className={claseCampo("fecha")}>
                 <label className={labelClass}>Fecha de entrega *</label>
                 <input
                   type="date"
@@ -418,7 +489,7 @@ export default function ConfettiFormularioPastel() {
           <section>
             <SectionTitle>③ Tamaño del pastel</SectionTitle>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
+              <div ref={refPersonas} className={claseCampo("personas")}>
                 <label className={labelClass}>¿Para cuántas personas? *</label>
                 <input
                   type="number"
@@ -437,7 +508,7 @@ export default function ConfettiFormularioPastel() {
                   Sugerimos {kilosSugeridos} kg para {personas || 0} personas
                 </p>
               </div>
-              <div>
+              <div ref={refKilos} className={claseCampo("kilos")}>
                 <label className={labelClass}>Kilos del pastel *</label>
                 <input
                   type="number"
@@ -552,7 +623,7 @@ export default function ConfettiFormularioPastel() {
                   className={inputClass}
                 />
               </div>
-              <div>
+              <div ref={refRelleno} className={claseCampo("relleno")}>
                 <label className={labelClass}>
                   Relleno{rellenosPastel.length > 0 ? " *" : ""}
                 </label>
@@ -655,15 +726,17 @@ export default function ConfettiFormularioPastel() {
             <p className="mb-4 text-sm font-['Plus_Jakarta_Sans'] font-medium text-red-500">
               * Campo requerido — no podemos procesar el pedido sin sucursal
             </p>
-            <SucursalSelector
-              sucursales={sucursales}
-              seleccionada={sucursalSeleccionada}
-              onSelect={(s) => {
-                setSucursalSeleccionada(s);
-                setSinSucursalError(false);
-              }}
-              error={sinSucursalError}
-            />
+            <div ref={refSucursal} className={claseCampo("sucursal")}>
+              <SucursalSelector
+                sucursales={sucursales}
+                seleccionada={sucursalSeleccionada}
+                onSelect={(s) => {
+                  setSucursalSeleccionada(s);
+                  setSinSucursalError(false);
+                }}
+                error={sinSucursalError}
+              />
+            </div>
           </section>
 
           {/* ⑦ Notas */}
@@ -685,16 +758,59 @@ export default function ConfettiFormularioPastel() {
                 {error}
               </div>
             )}
+
+            {/* LO QUE FALTA — en grande, con un botón por dato que lleva
+                directo al campo y lo hace parpadear. Se vacía solo conforme
+                la persona los va llenando; cuando no queda ninguno, el aviso
+                desaparece y el botón envía de verdad. */}
+            {faltantes.length > 0 && (
+              <div
+                role="alert"
+                aria-live="assertive"
+                className="mb-5 rounded-2xl border-4 border-[#E8579A] bg-[#FFF1F6] p-4 shadow-[0_8px_28px_rgba(232,87,154,0.25)]"
+              >
+                <p className="font-['Plus_Jakarta_Sans'] text-lg font-extrabold text-[#C22C6E]">
+                  ✋ Espera, {faltantes.length === 1 ? "falta 1 dato" : `faltan ${faltantes.length} datos`}
+                </p>
+                <p className="mt-1 font-['Plus_Jakarta_Sans'] text-sm text-[#7C5C52]">
+                  Toca el botón rosa de cada uno y te llevo directo a llenarlo.
+                </p>
+                <ul className="mt-3 space-y-2">
+                  {faltantes.map((c) => (
+                    <li
+                      key={c.clave}
+                      className="flex items-center justify-between gap-3 rounded-xl bg-white p-3"
+                    >
+                      <span className="font-['Plus_Jakarta_Sans'] text-base font-bold text-[#2C1A0E]">
+                        {c.etiqueta}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => irACampo(c)}
+                        className="shrink-0 rounded-xl bg-[#E8579A] px-4 py-2.5 font-['Plus_Jakarta_Sans'] text-sm font-bold text-white hover:bg-[#d44488] active:scale-95 transition"
+                      >
+                        Ir aquí →
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {/* El botón NUNCA se deshabilita por campos faltantes: sólo mientras
+                se envía. Un botón gris sin explicación es justo lo que dejó a
+                dos clientes sin poder pedir. Ahora se puede tocar SIEMPRE, y si
+                falta algo lo dice y lleva hasta el campo. */}
             <motion.button
               type="button"
-              disabled={!puedeEnviar || enviando}
+              disabled={enviando}
               onClick={handleEnviarPedido}
-              whileHover={puedeEnviar && !enviando ? { scale: 1.01 } : {}}
-              whileTap={puedeEnviar && !enviando ? { scale: 0.98 } : {}}
+              whileHover={!enviando ? { scale: 1.01 } : {}}
+              whileTap={!enviando ? { scale: 0.98 } : {}}
               className={`w-full inline-flex items-center justify-center gap-3 px-6 py-4 font-['Plus_Jakarta_Sans'] font-semibold text-base rounded-2xl transition-colors duration-200 ${
-                puedeEnviar && !enviando
-                  ? "bg-[#E8579A] text-white hover:bg-[#d44488]"
-                  : "bg-[#F0DDD5] text-[#C4A89A] cursor-not-allowed"
+                enviando
+                  ? "bg-[#F0DDD5] text-[#C4A89A] cursor-wait"
+                  : "bg-[#E8579A] text-white hover:bg-[#d44488]"
               }`}
             >
               {enviando ? (
