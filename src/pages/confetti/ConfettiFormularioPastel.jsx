@@ -290,7 +290,11 @@ export default function ConfettiFormularioPastel() {
       setIntentoEnvio(true);
       setSinSucursalError(pendientes.some((c) => c.clave === "sucursal"));
       setError(null);
-      irACampo(pendientes[0]);
+      // A PROPÓSITO no se mueve la pantalla aquí. Antes saltaba sola al primer
+      // campo pendiente y se sentía como si la página se hubiera descontrolado:
+      // tocas "Enviar" y te avienta arriba sin que entiendas por qué. El aviso
+      // sale donde la persona ya está mirando, y el scroll sólo ocurre cuando
+      // ELLA lo pide tocando "Ir aquí".
       return;
     }
 
@@ -299,10 +303,28 @@ export default function ConfettiFormularioPastel() {
     setSinSucursalError(false);
 
     try {
+      // ── LA FOTO NUNCA PUEDE TUMBAR EL PEDIDO ────────────────────────────
+      // La imagen de referencia es OPCIONAL, pero su subida vivía dentro de
+      // este mismo try: si fallaba, se perdía el pedido COMPLETO y la persona
+      // sólo veía "Hubo un problema al enviar tu pedido". Un dato opcional
+      // jamás debe costar una venta — y si a alguien le pasó, el error es
+      // NUESTRO, no suyo.
+      //
+      // Ahora la subida tiene su propio try: si truena, el pedido entra igual
+      // sin imagen, y el aviso de que falta la foto viaja EN LA NOTA para que
+      // en la pastelería la pidan por WhatsApp. Nadie se entera por accidente.
       let imagenUrl = null;
+      let fotoFallo = false;
       if (imagenReferencia) {
-        const uploadResult = await uploadArchivo(imagenReferencia);
-        imagenUrl = uploadResult?.file_url || null;
+        try {
+          const uploadResult = await uploadArchivo(imagenReferencia);
+          imagenUrl = uploadResult?.file_url || null;
+          if (!imagenUrl) fotoFallo = true;
+        } catch (errFoto) {
+          console.error("[pedido web] la foto no se pudo subir:", errFoto);
+          fotoFallo = true;
+          imagenUrl = null;
+        }
       }
 
       // Lista genérica de extras elegidos (espejo del POS). Se persiste en
@@ -344,7 +366,17 @@ export default function ConfettiFormularioPastel() {
         total_calculado: totalCalculado,
         total_final: totalCalculado,
         imagen_referencia_url: imagenUrl,
-        notas_generales: notasAdicionales || null,
+        // Si la foto no subió, el aviso va PEGADO a la nota del pedido: es lo
+        // que se ve en el POS y en el ticket, así que en la pastelería se
+        // enteran sin tener que revisar nada aparte.
+        notas_generales: [
+          notasAdicionales || null,
+          fotoFallo
+            ? "⚠️ EL CLIENTE ADJUNTÓ UNA FOTO DE REFERENCIA Y NO SE PUDO SUBIR. PÍDESELA POR WHATSAPP."
+            : null,
+        ]
+          .filter(Boolean)
+          .join("\n") || null,
       };
 
       const resultado = await entities.PedidoPastel.create({
@@ -357,7 +389,7 @@ export default function ConfettiFormularioPastel() {
       });
 
       navigate(
-        `/confetti/gracias?folio=${encodeURIComponent(resultado.folio)}&sucursal=${encodeURIComponent(sucursalSeleccionada.nombre)}&fecha=${encodeURIComponent(fechaEntrega)}&wa=${encodeURIComponent(sucursalSeleccionada.whatsapp_numero || sucursalSeleccionada.telefono || "")}`
+        `/confetti/gracias?folio=${encodeURIComponent(resultado.folio)}&sucursal=${encodeURIComponent(sucursalSeleccionada.nombre)}&fecha=${encodeURIComponent(fechaEntrega)}&wa=${encodeURIComponent(sucursalSeleccionada.whatsapp_numero || sucursalSeleccionada.telefono || "")}${fotoFallo ? "&sinfoto=1" : ""}`
       );
     } catch (err) {
       console.error("Error al crear pedido web:", err);
@@ -759,15 +791,47 @@ export default function ConfettiFormularioPastel() {
               </div>
             )}
 
+            {/* El botón NUNCA se deshabilita por campos faltantes: sólo mientras
+                se envía. Un botón gris sin explicación es justo lo que dejó a
+                dos clientes sin poder pedir. Ahora se puede tocar SIEMPRE, y si
+                falta algo lo dice y lleva hasta el campo. */}
+            <motion.button
+              type="button"
+              disabled={enviando}
+              onClick={handleEnviarPedido}
+              whileHover={!enviando ? { scale: 1.01 } : {}}
+              whileTap={!enviando ? { scale: 0.98 } : {}}
+              className={`w-full inline-flex items-center justify-center gap-3 px-6 py-4 font-['Plus_Jakarta_Sans'] font-semibold text-base rounded-2xl transition-colors duration-200 ${
+                enviando
+                  ? "bg-[#F0DDD5] text-[#C4A89A] cursor-wait"
+                  : "bg-[#E8579A] text-white hover:bg-[#d44488]"
+              }`}
+            >
+              {enviando ? (
+                <span className="flex items-center gap-2">
+                  <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  Enviando tu pedido...
+                </span>
+              ) : (
+                "Enviar mi pedido 🎂"
+              )}
+            </motion.button>
             {/* LO QUE FALTA — en grande, con un botón por dato que lleva
                 directo al campo y lo hace parpadear. Se vacía solo conforme
                 la persona los va llenando; cuando no queda ninguno, el aviso
-                desaparece y el botón envía de verdad. */}
+                desaparece y el botón envía de verdad.
+
+                VA DEBAJO DEL BOTÓN, Y ES A PROPÓSITO. Puesto encima, al
+                aparecer empujaba el botón ~700 px hacia abajo y la pantalla se
+                movía sola: tocabas "Enviar" y la página se te iba, que es
+                exactamente la sensación que hay que evitar. Debajo, nada de lo
+                que ya estaba en pantalla se mueve: el aviso aparece bajo el
+                dedo, donde la persona ya está mirando. */}
             {faltantes.length > 0 && (
               <div
                 role="alert"
                 aria-live="assertive"
-                className="mb-5 rounded-2xl border-4 border-[#E8579A] bg-[#FFF1F6] p-4 shadow-[0_8px_28px_rgba(232,87,154,0.25)]"
+                className="mt-5 rounded-2xl border-4 border-[#E8579A] bg-[#FFF1F6] p-4 shadow-[0_8px_28px_rgba(232,87,154,0.25)]"
               >
                 <p className="font-['Plus_Jakarta_Sans'] text-lg font-extrabold text-[#C22C6E]">
                   ✋ Espera, {faltantes.length === 1 ? "falta 1 dato" : `faltan ${faltantes.length} datos`}
@@ -797,31 +861,6 @@ export default function ConfettiFormularioPastel() {
               </div>
             )}
 
-            {/* El botón NUNCA se deshabilita por campos faltantes: sólo mientras
-                se envía. Un botón gris sin explicación es justo lo que dejó a
-                dos clientes sin poder pedir. Ahora se puede tocar SIEMPRE, y si
-                falta algo lo dice y lleva hasta el campo. */}
-            <motion.button
-              type="button"
-              disabled={enviando}
-              onClick={handleEnviarPedido}
-              whileHover={!enviando ? { scale: 1.01 } : {}}
-              whileTap={!enviando ? { scale: 0.98 } : {}}
-              className={`w-full inline-flex items-center justify-center gap-3 px-6 py-4 font-['Plus_Jakarta_Sans'] font-semibold text-base rounded-2xl transition-colors duration-200 ${
-                enviando
-                  ? "bg-[#F0DDD5] text-[#C4A89A] cursor-wait"
-                  : "bg-[#E8579A] text-white hover:bg-[#d44488]"
-              }`}
-            >
-              {enviando ? (
-                <span className="flex items-center gap-2">
-                  <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  Enviando tu pedido...
-                </span>
-              ) : (
-                "Enviar mi pedido 🎂"
-              )}
-            </motion.button>
             <p className="text-center text-sm font-['Plus_Jakarta_Sans'] text-[#7C5C52] mt-3">
               Al enviar tu pedido, te contactaremos por WhatsApp para confirmar disponibilidad,
               detalles y precio final. Sin cobros en línea.

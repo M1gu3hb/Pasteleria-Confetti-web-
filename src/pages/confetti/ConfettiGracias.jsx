@@ -12,6 +12,10 @@ export default function ConfettiGracias() {
   const sucursal = urlParams.get("sucursal") || "";
   const fecha = urlParams.get("fecha") || "";
   const waParam = (urlParams.get("wa") || "").replace(/\D/g, "");
+  // La foto de referencia no se pudo subir. El pedido SÍ entró: sólo hay que
+  // pedirle la imagen por WhatsApp. Se le dice claro para que no se quede con
+  // la duda de si su pastel va a salir sin la referencia que eligió.
+  const sinFoto = urlParams.get("sinfoto") === "1";
 
   const [confettiActivo, setConfettiActivo] = useState(true);
 
@@ -70,6 +74,24 @@ export default function ConfettiGracias() {
         >
           👇 Toca el botón verde para confirmar tu pedido <strong>{folio}</strong>.
         </motion.p>
+
+        {sinFoto && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.58 }}
+            className="mt-4 mx-auto max-w-md rounded-2xl border-2 border-[#E8579A] bg-[#FFF1F6] px-4 py-3 text-left"
+          >
+            <p className="font-['Plus_Jakarta_Sans'] text-sm font-bold text-[#C22C6E]">
+              📷 Tu foto de referencia no se pudo subir
+            </p>
+            <p className="mt-1 font-['Plus_Jakarta_Sans'] text-sm text-[#5C2D1E]">
+              Tu pedido <strong>sí quedó registrado</strong>, no lo vuelvas a
+              enviar. Sólo mándanos la foto por WhatsApp junto con tu folio y
+              listo.
+            </p>
+          </motion.div>
+        )}
 
         <motion.div
           initial={{ opacity: 0, y: 20 }}
