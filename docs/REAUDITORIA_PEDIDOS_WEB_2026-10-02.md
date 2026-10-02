@@ -6,4 +6,4 @@ RPC nueva crear_pedido_web_idempotente conserva wrapper viejo. Cuotas de nuevas 
 
 npm audit tras actualizaciones compatibles: dos moderados del router, cero altos/críticos. No se usó force. Esta revisión no certifica WCAG completa, restauración, dispositivos ni confidencialidad de Storage público. Navegadores viejos deben recargar para obtener intención persistente. No se enviaron pedidos ficticios a producción.
 
-El registro de publicación se añade una vez comprobados GitHub, Supabase y Vercel.
+Publicación comprobada: commit 3d9dabe46119b59ba71fd851a1420bc613744177; dpl_DNHpsHm4xZzqPuctGR9f7vSuAnkj READY, HTTP 200 y `/assets/index-Bdqk0nNU.js` contiene RPC idempotente/recuperación; documento lang=es. La configuración versionada fija buildCommand=npm run build para ejecutar la puerta prebuild. No se pudieron leer logs remotos por indisponibilidad de esa herramienta del conector; las suites locales y el contenido servido son evidencia independiente. Cierres posteriores de documentación/configuración no alteran el envío verificado; consultar refs actuales para versión viva.
