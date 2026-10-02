@@ -1,3 +1,5 @@
+> Revisión 2026-10-02: pedidos únicamente por crear_pedido_web; INSERT directo anónimo retirado. Mínimo de fecha usa calendario CDMX tanto cliente como servidor. Campos de pagos/crédito/autoridad se rechazan. La autorización de Miguel en esta sesión comprende ambos repositorios y la base compartida.
+
 # CLAUDE.md — Reglas permanentes (Web Confetti — catálogo público)
 
 > Repo SEPARADO del POS. La Web es un **frontend aparte** que comparte la MISMA base Supabase del POS.
@@ -30,3 +32,4 @@ Tras CADA cambio significativo, actualiza la doc + `docs/`. Commit + push frecue
 
 ## Git
 Rama de trabajo: `migracion/supabase` (no `main`). `main` = baseline export Base44 de la web (api_key REDACTADA).
+

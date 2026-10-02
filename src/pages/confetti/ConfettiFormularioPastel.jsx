@@ -1,3 +1,4 @@
+import { fechaConfetti } from '@/utils/calendarioConfetti';
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -151,9 +152,7 @@ export default function ConfettiFormularioPastel() {
   // rangos: obligatorio y automático según los kilos (se calcula más abajo).
 
   // Fecha mínima: mañana
-  const manana = new Date();
-  manana.setDate(manana.getDate() + 1);
-  const minFecha = manana.toISOString().split("T")[0];
+  const minFecha = fechaConfetti(1);
 
   // Advertencia anticipación
   const fechaCercana = (() => {

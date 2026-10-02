@@ -1,3 +1,5 @@
+> Revisión 2026-10-02: pedidos únicamente por crear_pedido_web; INSERT directo anónimo retirado. Mínimo de fecha usa calendario CDMX tanto cliente como servidor. Campos de pagos/crédito/autoridad se rechazan. La autorización de Miguel en esta sesión comprende ambos repositorios y la base compartida.
+
 # NEXT_STEPS — Web Confetti
 
 Última actualización: 2026-06-27 (Web migrada y VALIDADA — WEB-0..3 + flujo cruzado; **bot 60 días confirmó web 30/30 pedidos a sucursal correcta**; próxima fase = **Vercel + MEJORAS**; cutover pendiente = lunes).
@@ -59,3 +61,4 @@
 **7) Build verde + deploy preview + SMOKE** (preview/local): catálogo desde `catalogo_publico` agrupado por `categoria_nombre`, branding Confetti (`config_publica`), imágenes re-hospedadas cargan; filtro por sucursal por ID (incl. producto de 1 sucursal); pastel: estima precio (precio_kilo_global/ratio), sube foto a `web-uploads`, ENVÍA → fila en `pedidos` `origen='web'/estado='pendiente'/folio PP-<prefijo>-#### (trigger)/tipo_pedido='pastel_personalizado'`; productos: texto en `notas_generales`, `kilos=0`; Gracias muestra el folio (según decisión #6). Verificar las filas/folios **por SQL/MCP** (anon no lee pedidos). Limpiar pedidos/archivos de prueba al terminar (staging solo maestros).
 
 > Reglas: NO tocar el repo/esquema POS (solo LEER vistas; el esquema vive en el repo POS). NO re-exponer la api_key `847df…`. Web pública = anon key + RLS. NO validar conexión end-to-end POS↔web todavía (eso es WEB-3). DETENERSE y reportar al cerrar WEB-2.
+

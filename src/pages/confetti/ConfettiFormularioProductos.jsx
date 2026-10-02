@@ -1,3 +1,4 @@
+import { fechaConfetti } from '@/utils/calendarioConfetti';
 import React, { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
@@ -138,7 +139,7 @@ export default function ConfettiFormularioProductos() {
     0
   );
 
-  const hoy = new Date().toISOString().split("T")[0];
+  const hoy = fechaConfetti();
 
   const emailValido = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(clienteEmail);
 
