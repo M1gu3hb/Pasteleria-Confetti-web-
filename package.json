@@ -9,7 +9,10 @@
     "lint": "eslint . --quiet",
     "lint:fix": "eslint . --fix",
     "typecheck": "tsc -p ./jsconfig.json",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test:pedidos": "node scripts/envio_web_verify.mjs && node scripts/formularios_accesibles_verify.mjs",
+    "quality": "npm run lint && node scripts/calidad_types_verify.mjs && npm run test:pedidos",
+    "prebuild": "npm run quality"
   },
   "dependencies": {
     "@hookform/resolvers": "^4.1.2",

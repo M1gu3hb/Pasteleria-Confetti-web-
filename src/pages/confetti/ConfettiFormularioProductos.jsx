@@ -1,5 +1,5 @@
 import { fechaConfetti } from '@/utils/calendarioConfetti';
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { WhatsappLogo, CaretDown } from "@phosphor-icons/react";
@@ -8,6 +8,7 @@ import { entities } from "@/api/entitiesAdapter";
 import SucursalSelector from "./components/SucursalSelector";
 import ProductoSearch from "./components/ProductoSearch";
 import ProductosVerTodos from "./components/ProductosVerTodos";
+import { enviarPedidoWeb, hayEnvioPendiente, urlGraciasPedido } from '@/utils/envioPedidoWeb';
 
 const inputClass =
   "w-full px-4 py-3 text-base font-['Plus_Jakarta_Sans'] text-[#2C1A0E] bg-white border-2 border-[#F0DDD5] rounded-xl focus:outline-none focus:border-[#E8579A] focus:ring-2 focus:ring-[#E8579A]/20 placeholder:text-[#C4A89A] transition-colors duration-200";
@@ -37,6 +38,15 @@ export default function ConfettiFormularioProductos() {
   const [sucursalSeleccionada, setSucursalSeleccionada] = useState(null);
   const [notaAdicional, setNotaAdicional] = useState("");
   const [enviando, setEnviando] = useState(false);
+  const enviandoRef = useRef(false);
+  const recuperarEnvio = async () => {
+    if (enviandoRef.current) return;
+    enviandoRef.current = true;
+    setEnviando(true); setError(null);
+    try { navigate(urlGraciasPedido(await enviarPedidoWeb('productos_catalogo'))); }
+    catch (e) { setError(e?.message || 'No se pudo recuperar el envío. Intenta de nuevo.'); }
+    finally { enviandoRef.current = false; setEnviando(false); }
+  };
   const [error, setError] = useState(null);
   const [sinSucursalError, setSinSucursalError] = useState(false);
 
@@ -67,7 +77,7 @@ export default function ConfettiFormularioProductos() {
       const existe = productos.find((p) => p.id === productoInicialId);
       if (existe) setCantidades((prev) => ({ ...prev, [productoInicialId]: 1 }));
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [productoInicialId, productos]);
 
   const incrementar = (id) =>
@@ -132,7 +142,7 @@ export default function ConfettiFormularioProductos() {
     ) {
       setSucursalSeleccionada(null);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [idsPermitidos, hayConflicto, sucursales]);
   const totalAprox = seleccionados.reduce(
     (s, p) => s + cantidades[p.id] * (p.precio_venta || 0),
@@ -161,6 +171,8 @@ export default function ConfettiFormularioProductos() {
   };
 
   const handleEnviar = async () => {
+    if (enviandoRef.current) return;
+    if (hayEnvioPendiente('productos_catalogo')) return recuperarEnvio();
     if (!puedeEnviar) {
       setSinSucursalError(!sucursalSeleccionada);
       setError(
@@ -171,6 +183,7 @@ export default function ConfettiFormularioProductos() {
       return;
     }
 
+    enviandoRef.current = true;
     setEnviando(true);
     setError(null);
     setSinSucursalError(false);
@@ -197,23 +210,26 @@ export default function ConfettiFormularioProductos() {
         a_cuenta: 0,
         total_abonado: 0,
         saldo_pendiente: totalAprox,
-      });
+      }, { whatsapp: sucursalSeleccionada.whatsapp_numero || sucursalSeleccionada.telefono || '' });
 
-      navigate(
-        `/confetti/gracias?folio=${encodeURIComponent(resultado.folio)}&sucursal=${encodeURIComponent(sucursalSeleccionada.nombre)}&fecha=${encodeURIComponent(fechaRecogida)}&wa=${encodeURIComponent(sucursalSeleccionada.whatsapp_numero || sucursalSeleccionada.telefono || "")}`
-      );
+      navigate(urlGraciasPedido(resultado));
     } catch (err) {
       console.error("Error al crear pedido de productos:", err);
       setError(
-        "Hubo un problema al enviar tu pedido. Por favor intenta de nuevo o contáctanos por WhatsApp."
+        err?.message || "No se confirmó el envío. Recupera el mismo pedido o contáctanos por WhatsApp."
       );
     } finally {
+      enviandoRef.current = false;
       setEnviando(false);
     }
   };
 
   return (
     <div className="max-w-3xl mx-auto px-4 md:px-6 pb-32">
+      {hayEnvioPendiente('productos_catalogo') && <div role="alert" className="my-4 p-4 border rounded-xl bg-amber-50">
+        <p>Hay un envío pendiente de confirmar. Recupera su folio antes de enviar otro pedido.</p>
+        <button type="button" className="mt-2 font-semibold underline" disabled={enviando} onClick={recuperarEnvio}>Recuperar pedido enviado</button>
+      </div>}
       {/* Header */}
       <div className="text-center">
         <h1 className="font-['Playfair_Display'] text-3xl md:text-4xl font-semibold text-[#2C1A0E]">
@@ -230,8 +246,8 @@ export default function ConfettiFormularioProductos() {
           <SectionTitle>① Tus datos</SectionTitle>
           <div className="space-y-4">
             <div>
-              <label className={labelClass}>Nombre completo *</label>
-              <input
+              <label htmlFor="confetti-productos-1" className={labelClass}>Nombre completo *</label>
+              <input id="confetti-productos-1"
                 type="text"
                 value={clienteNombre}
                 onChange={(e) => setClienteNombre(e.target.value)}
@@ -240,14 +256,14 @@ export default function ConfettiFormularioProductos() {
               />
             </div>
             <div>
-              <label className={labelClass}>Teléfono / WhatsApp *</label>
+              <label htmlFor="confetti-productos-telefono" className={labelClass}>Teléfono / WhatsApp *</label>
               <div className="relative">
                 <WhatsappLogo
                   size={20}
                   weight="fill"
                   className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#E8579A]"
                 />
-                <input
+                <input id="confetti-productos-telefono"
                   type="tel"
                   value={clienteTelefono}
                   onChange={(e) => setClienteTelefono(e.target.value)}
@@ -257,8 +273,8 @@ export default function ConfettiFormularioProductos() {
               </div>
             </div>
             <div>
-              <label className={labelClass}>Correo electrónico *</label>
-              <input
+              <label htmlFor="confetti-productos-2" className={labelClass}>Correo electrónico *</label>
+              <input id="confetti-productos-2"
                 type="email"
                 value={clienteEmail}
                 onChange={(e) => setClienteEmail(e.target.value)}
@@ -279,8 +295,8 @@ export default function ConfettiFormularioProductos() {
           <SectionTitle>② ¿Cuándo recoges?</SectionTitle>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className={labelClass}>Fecha de recogida *</label>
-              <input
+              <label htmlFor="confetti-productos-3" className={labelClass}>Fecha de recogida *</label>
+              <input id="confetti-productos-3"
                 type="date"
                 min={hoy}
                 value={fechaRecogida}
@@ -289,8 +305,8 @@ export default function ConfettiFormularioProductos() {
               />
             </div>
             <div>
-              <label className={labelClass}>Hora aproximada</label>
-              <input
+              <label htmlFor="confetti-productos-4" className={labelClass}>Hora aproximada</label>
+              <input id="confetti-productos-4"
                 type="time"
                 value={horaRecogida}
                 onChange={(e) => setHoraRecogida(e.target.value)}
@@ -405,7 +421,7 @@ export default function ConfettiFormularioProductos() {
         {/* Sección 5 — Nota */}
         <section>
           <SectionTitle>⑤ Nota opcional</SectionTitle>
-          <textarea
+          <textarea aria-label="Observaciones adicionales"
             rows={3}
             value={notaAdicional}
             onChange={(e) => setNotaAdicional(e.target.value)}

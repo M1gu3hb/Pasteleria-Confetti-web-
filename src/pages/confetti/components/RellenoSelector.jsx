@@ -17,6 +17,9 @@ export default function RellenoSelector({ value, onChange, rellenos = [], precio
     <div>
       {/* Barra */}
       <button
+        id="confetti-relleno"
+        aria-expanded={abierto}
+        aria-controls="confetti-opciones-relleno"
         type="button"
         onClick={() => setAbierto((a) => !a)}
         className={`w-full flex items-center justify-between px-4 py-3 border-2 rounded-xl font-['Plus_Jakarta_Sans'] cursor-pointer hover:border-[#E8579A] transition-colors ${
@@ -51,7 +54,7 @@ export default function RellenoSelector({ value, onChange, rellenos = [], precio
             transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
             className="overflow-hidden"
           >
-            <div className="mt-3 p-4 bg-white border-2 border-[#F0DDD5] rounded-2xl">
+            <div id="confetti-opciones-relleno" className="mt-3 p-4 bg-white border-2 border-[#F0DDD5] rounded-2xl">
               {rellenos.length === 0 ? (
                 <p className="text-sm font-['Plus_Jakarta_Sans'] text-[#7C5C52]">
                   Cuéntanos en las notas qué relleno prefieres y te confirmamos por WhatsApp.

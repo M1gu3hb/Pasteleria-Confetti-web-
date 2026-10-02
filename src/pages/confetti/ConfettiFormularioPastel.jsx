@@ -6,7 +6,6 @@ import {
   WhatsappLogo,
   Upload,
   X,
-  CalendarBlank,
   Warning,
 } from "@phosphor-icons/react";
 import { ChevronUp } from "lucide-react";
@@ -16,6 +15,7 @@ import SucursalSelector from "./components/SucursalSelector";
 import PrecioResumen from "./components/PrecioResumen";
 import RellenoSelector from "./components/RellenoSelector";
 import { calcularImporteBase, rangoMaximoKg } from "@/utils/baseRangos";
+import { enviarPedidoWeb, hayEnvioPendiente, urlGraciasPedido } from '@/utils/envioPedidoWeb';
 
 const inputClass =
   "w-full px-4 py-3 text-base font-['Plus_Jakarta_Sans'] text-[#2C1A0E] bg-white border-2 border-[#F0DDD5] rounded-xl focus:outline-none focus:border-[#E8579A] focus:ring-2 focus:ring-[#E8579A]/20 placeholder:text-[#C4A89A] transition-colors duration-200";
@@ -74,6 +74,15 @@ export default function ConfettiFormularioPastel() {
 
   // Estado de envío
   const [enviando, setEnviando] = useState(false);
+  const enviandoRef = useRef(false);
+  const recuperarEnvio = async () => {
+    if (enviandoRef.current) return;
+    enviandoRef.current = true;
+    setEnviando(true); setError(null);
+    try { navigate(urlGraciasPedido(await enviarPedidoWeb('pastel_personalizado'))); }
+    catch (e) { setError(e?.message || 'No se pudo recuperar el envío. Intenta de nuevo.'); }
+    finally { enviandoRef.current = false; setEnviando(false); }
+  };
   const [error, setError] = useState(null);
   const [sinSucursalError, setSinSucursalError] = useState(false);
   const [mostrarResumenMovil, setMostrarResumenMovil] = useState(false);
@@ -128,7 +137,7 @@ export default function ConfettiFormularioPastel() {
       setPrecioKilo((prev) => (rellenoInfo?.tipo === "precio_kilo" ? prev : base));
       setRatio(configLocal.ratio_personas_por_kilo || 7);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [configLocal]);
 
   // Calcular kilos sugeridos al cambiar personas. Solo autocompleta si el cliente
@@ -281,6 +290,8 @@ export default function ConfettiFormularioPastel() {
     `campo-anclado${campoResaltado === clave ? " campo-falta" : ""}`;
 
   const handleEnviarPedido = async () => {
+    if (enviandoRef.current) return;
+    if (hayEnvioPendiente('pastel_personalizado')) return recuperarEnvio();
     // Ya NO se sale en silencio. Si falta algo, lo DICE, lo LISTA y lleva al
     // primero que falta. El botón por eso está siempre activo: un botón gris
     // sin explicación es exactamente lo que dejó a dos clientes fuera.
@@ -297,6 +308,7 @@ export default function ConfettiFormularioPastel() {
       return;
     }
 
+    enviandoRef.current = true;
     setEnviando(true);
     setError(null);
     setSinSucursalError(false);
@@ -385,17 +397,16 @@ export default function ConfettiFormularioPastel() {
         a_cuenta: 0,
         total_abonado: 0,
         saldo_pendiente: pedidoData.total_final || 0,
-      });
+      }, { whatsapp: sucursalSeleccionada.whatsapp_numero || sucursalSeleccionada.telefono || '', sinFoto: fotoFallo });
 
-      navigate(
-        `/confetti/gracias?folio=${encodeURIComponent(resultado.folio)}&sucursal=${encodeURIComponent(sucursalSeleccionada.nombre)}&fecha=${encodeURIComponent(fechaEntrega)}&wa=${encodeURIComponent(sucursalSeleccionada.whatsapp_numero || sucursalSeleccionada.telefono || "")}${fotoFallo ? "&sinfoto=1" : ""}`
-      );
+      navigate(urlGraciasPedido(resultado));
     } catch (err) {
       console.error("Error al crear pedido web:", err);
       setError(
-        "Hubo un problema al enviar tu pedido. Por favor intenta de nuevo o contáctanos por WhatsApp."
+        err?.message || "No se confirmó el envío. Recupera el mismo pedido o contáctanos por WhatsApp."
       );
     } finally {
+      enviandoRef.current = false;
       setEnviando(false);
     }
   };
@@ -405,6 +416,10 @@ export default function ConfettiFormularioPastel() {
 
   return (
     <div className="max-w-6xl mx-auto px-4 md:px-6 pb-32 lg:pb-16">
+      {hayEnvioPendiente('pastel_personalizado') && <div role="alert" className="my-4 p-4 border rounded-xl bg-amber-50">
+        <p>Hay un envío pendiente de confirmar. Recupera su folio antes de enviar otro pedido.</p>
+        <button type="button" className="mt-2 font-semibold underline" disabled={enviando} onClick={recuperarEnvio}>Recuperar pedido enviado</button>
+      </div>}
       {/* Header */}
       <div className="text-center max-w-2xl mx-auto">
         <span className="inline-block bg-[#FDEEF6] text-[#E8579A] text-xs font-['Plus_Jakarta_Sans'] font-bold px-4 py-2 rounded-full">
@@ -427,8 +442,8 @@ export default function ConfettiFormularioPastel() {
             <SectionTitle>① Tus datos de contacto</SectionTitle>
             <div className="space-y-4">
               <div ref={refNombre} className={claseCampo("nombre")}>
-                <label className={labelClass}>Nombre completo *</label>
-                <input
+                <label htmlFor="confetti-pastel-1" className={labelClass}>Nombre completo *</label>
+                <input id="confetti-pastel-1"
                   type="text"
                   value={clienteNombre}
                   onChange={(e) => setClienteNombre(e.target.value)}
@@ -437,14 +452,14 @@ export default function ConfettiFormularioPastel() {
                 />
               </div>
               <div ref={refTelefono} className={claseCampo("telefono")}>
-                <label className={labelClass}>Teléfono / WhatsApp *</label>
+                <label htmlFor="confetti-pastel-telefono" className={labelClass}>Teléfono / WhatsApp *</label>
                 <div className="relative">
                   <WhatsappLogo
                     size={20}
                     weight="fill"
                     className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#E8579A]"
                   />
-                  <input
+                  <input id="confetti-pastel-telefono"
                     type="tel"
                     value={clienteTelefono}
                     onChange={(e) => setClienteTelefono(e.target.value)}
@@ -470,8 +485,8 @@ export default function ConfettiFormularioPastel() {
               )}
               {requiereEntrega && puedeEntregaDomicilio && (
                 <div>
-                  <label className={labelClass}>Dirección de entrega</label>
-                  <input
+                  <label htmlFor="confetti-pastel-2" className={labelClass}>Dirección de entrega</label>
+                  <input id="confetti-pastel-2"
                     type="text"
                     value={direccionEntrega}
                     onChange={(e) => setDireccionEntrega(e.target.value)}
@@ -488,8 +503,8 @@ export default function ConfettiFormularioPastel() {
             <SectionTitle>② ¿Cuándo lo necesitas?</SectionTitle>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div ref={refFecha} className={claseCampo("fecha")}>
-                <label className={labelClass}>Fecha de entrega *</label>
-                <input
+                <label htmlFor="confetti-pastel-3" className={labelClass}>Fecha de entrega *</label>
+                <input id="confetti-pastel-3"
                   type="date"
                   min={minFecha}
                   value={fechaEntrega}
@@ -498,8 +513,8 @@ export default function ConfettiFormularioPastel() {
                 />
               </div>
               <div>
-                <label className={labelClass}>Hora aproximada</label>
-                <input
+                <label htmlFor="confetti-pastel-4" className={labelClass}>Hora aproximada</label>
+                <input id="confetti-pastel-4"
                   type="time"
                   value={horaEntrega}
                   onChange={(e) => setHoraEntrega(e.target.value)}
@@ -521,8 +536,8 @@ export default function ConfettiFormularioPastel() {
             <SectionTitle>③ Tamaño del pastel</SectionTitle>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div ref={refPersonas} className={claseCampo("personas")}>
-                <label className={labelClass}>¿Para cuántas personas? *</label>
-                <input
+                <label htmlFor="confetti-pastel-5" className={labelClass}>¿Para cuántas personas? *</label>
+                <input id="confetti-pastel-5"
                   type="number"
                   inputMode="numeric"
                   min={10}
@@ -540,8 +555,8 @@ export default function ConfettiFormularioPastel() {
                 </p>
               </div>
               <div ref={refKilos} className={claseCampo("kilos")}>
-                <label className={labelClass}>Kilos del pastel *</label>
-                <input
+                <label htmlFor="confetti-pastel-6" className={labelClass}>Kilos del pastel *</label>
+                <input id="confetti-pastel-6"
                   type="number"
                   inputMode="decimal"
                   min={1}
@@ -635,8 +650,8 @@ export default function ConfettiFormularioPastel() {
             </p>
             <div className="space-y-4">
               <div>
-                <label className={labelClass}>Concepto / Temática</label>
-                <input
+                <label htmlFor="confetti-pastel-7" className={labelClass}>Concepto / Temática</label>
+                <input id="confetti-pastel-7"
                   type="text"
                   value={concepto}
                   onChange={(e) => setConcepto(e.target.value)}
@@ -645,8 +660,8 @@ export default function ConfettiFormularioPastel() {
                 />
               </div>
               <div>
-                <label className={labelClass}>Decorado</label>
-                <textarea
+                <label htmlFor="confetti-pastel-8" className={labelClass}>Decorado</label>
+                <textarea id="confetti-pastel-8"
                   rows={3}
                   value={decorado}
                   onChange={(e) => setDecorado(e.target.value)}
@@ -655,7 +670,7 @@ export default function ConfettiFormularioPastel() {
                 />
               </div>
               <div ref={refRelleno} className={claseCampo("relleno")}>
-                <label className={labelClass}>
+                <label htmlFor="confetti-relleno" className={labelClass}>
                   Relleno{rellenosPastel.length > 0 ? " *" : ""}
                 </label>
                 <RellenoSelector
@@ -689,8 +704,8 @@ export default function ConfettiFormularioPastel() {
                 )}
               </div>
               <div>
-                <label className={labelClass}>Leyenda en el pastel</label>
-                <input
+                <label htmlFor="confetti-pastel-9" className={labelClass}>Leyenda en el pastel</label>
+                <input id="confetti-pastel-9"
                   type="text"
                   maxLength={80}
                   value={leyenda}
@@ -711,7 +726,7 @@ export default function ConfettiFormularioPastel() {
             <p className="mb-4 text-sm font-['Plus_Jakarta_Sans'] text-[#7C5C52]">
               ¿Tienes una foto del pastel que te gustaría? Súbela aquí.
             </p>
-            <input
+            <input aria-label="Foto de referencia del pastel"
               ref={fileInputRef}
               type="file"
               accept="image/jpeg,image/png,image/webp"
@@ -773,7 +788,7 @@ export default function ConfettiFormularioPastel() {
           {/* ⑦ Notas */}
           <section>
             <SectionTitle>⑦ ¿Algo más que quieras decirnos?</SectionTitle>
-            <textarea
+            <textarea aria-label="Notas adicionales para el pedido"
               rows={4}
               value={notasAdicionales}
               onChange={(e) => setNotasAdicionales(e.target.value)}

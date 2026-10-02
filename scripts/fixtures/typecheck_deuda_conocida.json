@@ -1,0 +1,29 @@
+{
+  "fecha": "2026-10-02",
+  "descripcion": "Deuda preexistente, contrastada con la versión publicada. No exime diagnósticos nuevos. Cualquier aumento requiere revisión explícita.",
+  "diagnosticos": {
+    "[\"src/api/supabaseClient.js\",2339,\"Property 'env' does not exist on type 'ImportMeta'.\",\"const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;\"]": 1,
+    "[\"src/api/supabaseClient.js\",2339,\"Property 'env' does not exist on type 'ImportMeta'.\",\"const url = import.meta.env.VITE_SUPABASE_URL;\"]": 1,
+    "[\"src/pages/confetti/ConfettiCatalogo.jsx\",2339,\"Property 'ProductoTerminado' does not exist on type '{}'.\",\"entities.ProductoTerminado.filter(\"]": 1,
+    "[\"src/pages/confetti/ConfettiFormularioPastel.jsx\",2339,\"Property 'ConfiguracionNegocio' does not exist on type '{}'.\",\"const list = await entities.ConfiguracionNegocio.list();\"]": 1,
+    "[\"src/pages/confetti/ConfettiFormularioPastel.jsx\",2339,\"Property 'PedidoPastel' does not exist on type '{}'.\",\"const resultado = await entities.PedidoPastel.create({\"]": 1,
+    "[\"src/pages/confetti/ConfettiFormularioPastel.jsx\",2339,\"Property 'Sucursal' does not exist on type '{}'.\",\"entities.Sucursal.filter({ activa: true }, \\\"orden_visual\\\"),\"]": 1,
+    "[\"src/pages/confetti/ConfettiFormularioPastel.jsx\",2339,\"Property 'muneca' does not exist on type '{}'.\",\"incluye_muneca: !!extrasSeleccionados.muneca,\"]": 1,
+    "[\"src/pages/confetti/ConfettiFormularioPastel.jsx\",2339,\"Property 'oblea' does not exist on type '{}'.\",\"incluye_oblea: !!extrasSeleccionados.oblea,\"]": 1,
+    "[\"src/pages/confetti/ConfettiFormularioPastel.jsx\",2339,\"Property 'velas' does not exist on type '{}'.\",\"incluye_velas: !!extrasSeleccionados.velas,\"]": 1,
+    "[\"src/pages/confetti/ConfettiFormularioPastel.jsx\",2345,\"Argument of type 'number | \\\"\\\"' is not assignable to parameter of type 'SetStateAction<string>'.\\n  Type 'number' is not assignable to type 'SetStateAction<string>'.\",\"setKilos(v === \\\"\\\" ? \\\"\\\" : parseFloat(v));\"]": 1,
+    "[\"src/pages/confetti/ConfettiFormularioPastel.jsx\",2345,\"Argument of type 'number | \\\"\\\"' is not assignable to parameter of type 'SetStateAction<string>'.\\n  Type 'number' is not assignable to type 'SetStateAction<string>'.\",\"setPersonas(v === \\\"\\\" ? \\\"\\\" : parseInt(v, 10));\"]": 1,
+    "[\"src/pages/confetti/ConfettiFormularioPastel.jsx\",2345,\"Argument of type 'number' is not assignable to parameter of type 'SetStateAction<string>'.\",\"if (!kilosEditadoManual && Number(personas) > 0) setKilos(kilosSugeridos);\"]": 1,
+    "[\"src/pages/confetti/ConfettiFormularioPastel.jsx\",2362,\"The left-hand side of an arithmetic operation must be of type 'any', 'number', 'bigint' or an enum type.\",\"const diff = (new Date(fechaEntrega) - new Date()) / (1000 * 60 * 60 * 24);\"]": 1,
+    "[\"src/pages/confetti/ConfettiFormularioPastel.jsx\",2363,\"The right-hand side of an arithmetic operation must be of type 'any', 'number', 'bigint' or an enum type.\",\"const diff = (new Date(fechaEntrega) - new Date()) / (1000 * 60 * 60 * 24);\"]": 1,
+    "[\"src/pages/confetti/ConfettiFormularioProductos.jsx\",2339,\"Property 'CategoriaProducto' does not exist on type '{}'.\",\"queryFn: () => entities.CategoriaProducto.list(\\\"orden\\\"),\"]": 1,
+    "[\"src/pages/confetti/ConfettiFormularioProductos.jsx\",2339,\"Property 'PedidoPastel' does not exist on type '{}'.\",\"const resultado = await entities.PedidoPastel.create({\"]": 1,
+    "[\"src/pages/confetti/ConfettiFormularioProductos.jsx\",2339,\"Property 'ProductoTerminado' does not exist on type '{}'.\",\"entities.ProductoTerminado.filter(\"]": 1,
+    "[\"src/pages/confetti/ConfettiFormularioProductos.jsx\",2339,\"Property 'Sucursal' does not exist on type '{}'.\",\"entities.Sucursal.filter({ activa: true }, \\\"orden_visual\\\"),\"]": 1,
+    "[\"src/pages/confetti/ConfettiHome.jsx\",2339,\"Property 'ConfiguracionNegocio' does not exist on type '{}'.\",\"const list = await entities.ConfiguracionNegocio.list();\"]": 1,
+    "[\"src/pages/confetti/ConfettiHome.jsx\",2339,\"Property 'Sucursal' does not exist on type '{}'.\",\"entities.Sucursal.filter({ activa: true }, \\\"orden_visual\\\"),\"]": 1,
+    "[\"src/pages/confetti/components/ConfettiFooter.jsx\",2339,\"Property 'ConfiguracionNegocio' does not exist on type '{}'.\",\"const list = await entities.ConfiguracionNegocio.list();\"]": 1,
+    "[\"src/pages/confetti/components/ConfettiFooter.jsx\",2339,\"Property 'Sucursal' does not exist on type '{}'.\",\"entities.Sucursal.filter({ activa: true }, \\\"orden_visual\\\"),\"]": 1,
+    "[\"src/pages/confetti/components/ConfettiNav.jsx\",2339,\"Property 'ConfiguracionNegocio' does not exist on type '{}'.\",\"const list = await entities.ConfiguracionNegocio.list();\"]": 1
+  }
+}

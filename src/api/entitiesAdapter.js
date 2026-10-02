@@ -14,6 +14,7 @@
 // =====================================================================
 import { supabase } from './supabaseClient';
 import { normalizarImagen } from '@/utils/normalizarImagen';
+import { enviarPedidoWeb } from '@/utils/envioPedidoWeb';
 
 // Entidad Base44 (PascalCase) -> relación pública (snake_case)
 const TABLE_MAP = {
@@ -78,10 +79,8 @@ function makeReadEntity(table) {
 // tipo_pedido, whitelistea columnas (ignora devolver_base/folio/financieros) y asigna
 // el folio vía el trigger 0017. Devuelve { folio } para la pantalla Gracias.
 const pedidoEntity = {
-  async create(payload) {
-    const { data, error } = await supabase.rpc('crear_pedido_web', { payload });
-    if (error) throw new Error(error.message);
-    return { folio: data };
+  async create(payload, confirmacion) {
+    return enviarPedidoWeb(payload.tipo_pedido, payload, confirmacion);
   },
 };
 
@@ -89,7 +88,7 @@ const pedidoEntity = {
 const inertEntity = {
   async filter() { return []; },
   async list() { return []; },
-  async create(obj) { return obj; },
+  async create() { throw new Error('Esta operación no está disponible.'); },
 };
 
 const _cache = {};

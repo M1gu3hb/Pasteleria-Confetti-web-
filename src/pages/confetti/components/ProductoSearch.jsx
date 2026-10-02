@@ -58,6 +58,7 @@ export default function ProductoSearch({
           className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#C4A89A]"
         />
         <input
+          aria-label="Buscar productos del catálogo"
           type="text"
           value={busqueda}
           onChange={(e) => {

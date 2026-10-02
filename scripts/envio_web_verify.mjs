@@ -1,0 +1,16 @@
+import fs from 'node:fs';import vm from 'node:vm';import assert from 'node:assert/strict';import {randomUUID} from 'node:crypto';
+const source=fs.readFileSync(new URL('../src/utils/envioPedidoWeb.js',import.meta.url),'utf8').replace(/^import .*;$/gm,'').replace(/export /g,'');
+const stored=new Map(),orders=new Map();let calls=0,lose=true,rejection=null,hold=null;
+const storage={getItem:k=>stored.get(k)||null,setItem:(k,v)=>stored.set(k,v),removeItem:k=>stored.delete(k)};
+const rpc=async(name,{p_intencion,payload})=>{assert.equal(name,'crear_pedido_web_idempotente');calls++;if(hold)await hold;if(rejection)return {error:rejection};if(!orders.has(p_intencion))orders.set(p_intencion,{folio:'PP-A-'+(orders.size+1),payload});if(lose){lose=false;throw Error('network response lost');}return {data:orders.get(p_intencion).folio};};
+const session=(localStorage=storage)=>{const c=vm.createContext({console,Map,URLSearchParams,crypto:{randomUUID},localStorage,supabase:{rpc}});vm.runInContext(source+'\nglobalThis.api={enviarPedidoWeb,hayEnvioPendiente,urlGraciasPedido};',c);return c.api;};
+const original={tipo_pedido:'pastel_personalizado',total_final:100,sucursal_nombre:'A',fecha_entrega:'2099-10-01'};
+let api=session();await assert.rejects(()=>api.enviarPedidoWeb(original.tipo_pedido,original,{whatsapp:'WA-A',sinFoto:true}),/lost/);assert(api.hayEnvioPendiente(original.tipo_pedido));assert.equal(orders.size,1);
+api=session();const recovered=await api.enviarPedidoWeb(original.tipo_pedido,{...original,total_final:999,sucursal_nombre:'B'},{whatsapp:'WA-B'});assert.equal(recovered.datosOriginales.total_final,100);assert.equal(recovered.recuperado,true);assert.equal(orders.size,1);assert(!api.hayEnvioPendiente(original.tipo_pedido));
+const url=new URL(api.urlGraciasPedido(recovered),'https://fixture.local');assert.equal(url.searchParams.get('sucursal'),'A');assert.equal(url.searchParams.get('wa'),'WA-A');assert.equal(url.searchParams.get('sinfoto'),'1');
+let release;hold=new Promise(r=>release=r);const count=calls;const p1=api.enviarPedidoWeb(original.tipo_pedido,original),p2=api.enviarPedidoWeb(original.tipo_pedido,original);assert.equal(p1,p2);release();await Promise.all([p1,p2]);hold=null;assert.equal(calls,count+1);
+rejection={code:'P0001',message:'LIMITE_PEDIDOS_WEB'};await assert.rejects(()=>api.enviarPedidoWeb(original.tipo_pedido,original),/muchos pedidos/);assert(api.hayEnvioPendiente(original.tipo_pedido));
+rejection={code:'P0001',message:'FECHA_ENTREGA_INVALIDA'};await assert.rejects(()=>api.enviarPedidoWeb(original.tipo_pedido,null),/fecha/);assert(!api.hayEnvioPendiente(original.tipo_pedido));rejection=null;
+const n=calls;await assert.rejects(()=>session({...storage,setItem:()=>{throw Error('full');}}).enviarPedidoWeb(original.tipo_pedido,original),/conservar/);assert.equal(calls,n);
+stored.set('confetti:envio-web:v1:'+original.tipo_pedido,'not JSON');await assert.rejects(()=>session().enviarPedidoWeb(original.tipo_pedido,original),/recuperar/);assert.equal(calls,n);stored.clear();
+console.log('PASS: actual web request persists before write; lost-response/reload replays original payload+confirmation once; double-tap shares request; cooldown retains intent; definitive rollback clears it; storage failure never sends');
